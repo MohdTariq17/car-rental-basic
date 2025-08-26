@@ -15,14 +15,77 @@ const Header = () => {
             icon: 'pi pi-home'
         },
         {
-            label: 'Cars',
-            icon: 'pi pi-car'
+            label: 'admin',
+            icon: 'pi pi-user',
+            items: [
+                {
+                    label: 'Users',
+                    icon: 'pi pi-user-plus'
+                },
+                {
+                    label: 'Brands ',
+                    icon: 'pi pi-users'
+                },
+                {
+                    label: 'Models',
+                    icon: 'pi pi-id-card'
+                },
+                {
+                    label: 'Varients',
+                    icon: 'pi pi-car'
+                },
+                {
+                    label: 'States',
+                    icon: 'pi pi-palette'
+                },
+                {
+                    label: 'Cities',
+                    icon: 'pi pi-fire'
+                },
+                {
+                    label: 'Checklist Categories',
+                    icon: 'pi pi-list',
+                    
+                },
+                {
+                    label: 'Checklist Items',
+                    icon: 'pi pi-list',
+                    
+                },
+                {
+                    label: 'Settings',
+                    icon: 'pi pi-lock'
+                },
+                
+            ]
+        },
+        { label: 'Inventory',
+            icon: 'pi pi-warehouse',
+            items: [
+                { label: 'Available Cars', icon: 'pi pi-check' },
+                { label: 'Rented Cars', icon: 'pi pi-times' },  
+                { label: 'Maintenance', icon: 'pi pi-wrench' },
+                { label: 'Add New Car', icon: 'pi pi-plus' },
+            ]
         },
         {
             label: 'Bookings',
             icon: 'pi pi-calendar'
+        },
+        {
+            label: 'Customers',
+            icon: 'pi pi-users'
+        },
+        {
+            label: 'Reports',
+            icon: 'pi pi-chart-bar'
+        },
+        {
+            label: 'Support',
+            icon: 'pi pi-question-circle'
         }
     ];
+
 
     const menubarStyles = {
         padding: '1rem',

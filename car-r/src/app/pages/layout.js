@@ -1,158 +1,222 @@
-"use client"
-import React from 'react';
-import { Menubar } from 'primereact/menubar';
-import { Button } from 'primereact/button';
-import { Avatar } from 'primereact/avatar';
-import { useRouter } from 'next/navigation';
-import { AvatarGroup } from 'primereact/avatargroup';   //Optional for grouping
-import "primereact/resources/themes/lara-light-indigo/theme.css";  // theme
-import "primereact/resources/primereact.css";                    // core css
-import "primeicons/primeicons.css";                             // icons
-import "primeflex/primeflex.css";                              // flex & grid
+"use client";
+import React from "react";
+import { useRouter, usePathname } from "next/navigation";
+import "primereact/resources/themes/lara-light-indigo/theme.css"; // theme
+import "primereact/resources/primereact.css"; // core css
+import "primeicons/primeicons.css"; // icons
+import "primeflex/primeflex.css"; // primeflex
+import { Button } from "primereact/button";
+import { Menubar } from "primereact/menubar";
+import { BreadCrumb } from "primereact/breadcrumb";
+import Image from 'next/image';
 
 const Header = () => {
-    const router = useRouter();
-    const items = [
-        {
-            label: 'Home',
-            icon: 'pi pi-home',
-            command: () => { router.push('/pages/dashboard'); }
-        },
-        {
-            label: 'Admin',
-            icon: 'pi pi-user',
-            items: [
-                {
-                    label: 'Users',
-                    icon: 'pi pi-user-plus',
-                    command: () => { router.push('/pages/users'); }
-                },
-                {
-                    label: 'Brands ',
-                    icon: 'pi pi-users',
-                    command: () => { router.push('/pages/admin/brands'); }
-                },
-                {
-                    label: 'Models',
-                    icon: 'pi pi-id-card',
-                    command: () => { router.push('/pages/admin/models'); }
-                },
-                {
-                    label: 'Varients',
-                    icon: 'pi pi-car',
-                    command: () => { router.push('/pages/admin/varients'); }
-                },
-                {
-                    label: 'States',
-                    icon: 'pi pi-map-marker',
-                    command: () => { router.push('/pages/admin/states'); }
-                },
-                {
-                    label: 'Cities',
-                    icon: 'pi pi-map-marker',
-                    command: () => { router.push('/pages/admin/cities'); }
-                },
-                {
-                    label: 'Checklist Categories',
-                    icon: 'pi pi-list',
-                    command: () => { router.push('/pages/admin/checklistcategories'); }
+  const router = useRouter();
 
-                },
-                {
-                    label: 'Checklist Items',
-                    icon: 'pi pi-list',
-                    command: () => { router.push('/pages/admin/checklistitems'); }
-
-                },
-              
-            ]
-        },
-        { label: 'Inventory',
-            icon: 'pi pi-warehouse',
-            items: [
-                { label: 'Available Cars', icon: 'pi pi-check', command: () => { router.push('/pages/inventory/available'); } },
-                { label: 'Rented Cars', icon: 'pi pi-times', command: () => { router.push('/pages/inventory/rented'); } },
-                { label: 'Maintenance', icon: 'pi pi-wrench', command: () => { router.push('/pages/inventory/maintenance'); } },
-                { label: 'Add New Car', icon: 'pi pi-plus', command: () => { router.push('/pages/inventory/addcars'); } },
-            ]
+  const items = [
+    {
+      label: "Home",
+      icon: "pi pi-fw pi-home",
+      command: () => router.push("/pages/dashboard"),
+    },
+    {
+      label: "Admin",
+      icon: "pi pi-fw pi-user",
+      items: [
+        {
+          label: "Users",
+          icon: "pi pi-fw pi-users",
+          command: () => router.push("/pages/users"),
         },
         {
-            label: 'Bookings',
-            icon: 'pi pi-calendar',
-            command: () => { router.push('/pages/bookings'); }
+          label: "Brands",
+          icon: "pi pi-fw pi-car",
+          command: () => router.push("/pages/brands"),
         },
         {
-            label: 'Customers',
-            icon: 'pi pi-users',
-            command: () => { router.push('/pages/customers'); }
+          label: "Models",
+          icon: "pi pi-fw pi-car",
+          command: () => router.push("/pages/models"),
         },
         {
-            label: 'Reports',
-            icon: 'pi pi-chart-bar',
-            command: () => { router.push('/pages/reports'); }
+          label: "Variants",
+          icon: "pi pi-fw pi-car",
+          command: () => router.push("/pages/varients"),
         },
         {
-            label: 'Support',
-            icon: 'pi pi-question-circle',
-            command: () => { router.push('/pages/support'); }
+          label: "States",
+          icon: "pi pi-fw pi-map-marker",
+          command: () => router.push("/pages/states"),
         },
         {
-            label: 'Settings',
-            icon: 'pi pi-cog',
-            command: () => { router.push('/pages/settings'); }
+          label: "Cities",
+          icon: "pi pi-fw pi-map-marker",
+          command: () => router.push("/pages/cities"),
         },
-                
-    ];
+        {
+          label: "Checklist Category",
+          icon: "pi pi-fw pi-check-square",
+          command: () => router.push("/pages/checklistcategories"),
+        },
+        {
+          label: "Checklist Items",
+          icon: "pi pi-fw pi-check-square",
+          command: () => router.push("/pages/checklistitems"),
+        },
+        {
+          label: "Settings",
+          icon: "pi pi-fw pi-cog",
+          command: () => router.push("/pages/settings"),
+        },
+      ],
+    },
+    {
+      label: "Inventory",
+      icon: "pi pi-fw pi-warehouse",
+      items: [
+        {
+          label: "Pending Vehicles",
+          icon: "pi pi-fw pi-clock",
+          command: () => router.push("/pages/inventory/addcars"),
+        },
+        {
+          label: "Available Vehicles",
+          icon: "pi pi-fw pi-check",
+          command: () => router.push("/pages/inventory/available"),
+        },
+        {
+          label: "Rented Vehicles",
+          icon: "pi pi-fw pi-car",
+          command: () => router.push("/pages/inventory/rented"),
+        },
+        {
+          label: "Maintenance",
+          icon: "pi pi-fw pi-wrench",
+          command: () => router.push("/pages/inventory/maintenance"),
+        },
+        
+      ],
+    },
+    {
+      label: "Bookings",
+      icon: "pi pi-fw pi-calendar",
+      command: () => router.push("/pages/bookings"),
+    },
+    {
+      label: "Hosters",
+      icon: "pi pi-fw pi-users",
+      command: () => router.push("/pages/hoster"),
+    },
+    {
+      label: "Customers",
+      icon: "pi pi-fw pi-users",
+      command: () => router.push("/pages/customers"),
+    },
+    {
+      label: "Billing",
+      icon: "pi pi-fw pi-dollar",
+      command: () => router.push("/pages/billing"),
+    },
+    {
+      label: "Reports",
+      icon: "pi pi-fw pi-chart-bar",
+      command: () => router.push("/pages/reports"),
+    },
+  ];
 
+   const start = (
+    <div className="flex align-items-center gap-4">
+      <Image
+        src="https://img.icons8.com/color/64/000000/car--v2.png" // Replace with your logo URL
+        alt="Car rental logo"
+        width={64}
+        height={64}
+        priority // Optional: loads image with high priority
+      />
+    </div>
+  );
 
-    const menubarStyles = {
-        padding: '1rem',
-        backgroundColor: 'var(--surface-0)',
-        borderBottom: '1px solid var(--surface-200)'
-    };
+  const end = (
+    <Button
+      label="Logout"
+      icon="pi pi-power-off"
+      severity="danger"
+      className="p-button-rounded font-bold px-5 py-1"
+      onClick={() => router.push("/")}
+      style={{ fontSize: "1rem" }}
+    />
+  );
 
-    const start = (
-        <div className="flex align-items-center gap-2">
-            <Avatar 
-                icon="pi pi-car" 
-                size="large" 
-                shape="circle" 
-                className="bg-primary"
-                style={{ backgroundColor: 'var(--primary-color)' }}
-            />
-            <span className="font-bold text-xl text-primary">Car Rental</span>
-        </div>
-    );
+  return (
+    <header className="surface-0 shadow-5 border-round-bottom-3xl mb-0.5">
+      <div className="flex align-items-center justify-content-between px-2 py-3 bg-white">
+        <Menubar
+          model={items}
+          start={start}
+          end={end}
+          className="border-none w-full bg-transparent"
+          style={{
+            background: "white",
+            color: "#120202ff",
+            fontSize: "1.1rem",
+            fontWeight: "600",
+          }}
+        />
+      </div>
+    </header>
+  );
+};
 
-    const end = (
-        <div className="flex align-items-center gap-3">
-            <Avatar 
-                label="A" 
-                shape="circle" 
-                className="bg-primary"
-                style={{ backgroundColor: 'var(--primary-color)' }}
-            />
-            <Button 
-                label="Logout" 
-                icon="pi pi-sign-out" 
-                severity="danger" 
-                outlined
-                className="p-button-rounded"
-            />
-        </div>
-    );
+const Layout = ({ children }) => {
+  const pathname = usePathname();
+  const segments = pathname.split("/").filter(Boolean);
 
-    return (
-        <header className="shadow-2 sticky top-0 z-5">
-            <Menubar 
-                model={items} 
-                start={start} 
-                end={end}
-                className="border-none"
-                style={menubarStyles}
-            />
-        </header>
-    );
-}
+  // Create breadcrumb items
+  const items = segments.map((seg, i) => ({
+    label: seg.charAt(0).toUpperCase() + seg.slice(1),
+    url: "/" + segments.slice(0, i + 1).join("/"),
+  }));
 
-export default Header;
+  const home = { icon: "pi pi-home", url: "/pages/dashboard" };
+
+  return (
+    <div className="min-h-screen flex flex-column">
+      <Header />
+
+      {/* 🔹 Breadcrumb */}
+      <div className="px-3 py-2 bg-gray-50 border-bottom-1 border-gray-200">
+        <BreadCrumb
+          model={items.map((item, index) => ({
+            ...item,
+            template: (node, options) => (
+              <a
+                href={item.url}
+                aria-current={index === items.length - 1 ? "page" : undefined}
+                className={options.className}
+              >
+                {item.label}
+              </a>
+            ),
+          }))}
+          home={{
+            ...home,
+            template: (node, options) => (
+              <a
+                href={home.url}
+                aria-current={pathname === home.url ? "page" : undefined}
+                className={options.className}
+              >
+                <i className={home.icon} />
+              </a>
+            ),
+          }}
+        />
+
+      </div>
+
+      <main className="flex-grow-1">{children}</main>
+    </div>
+  );
+};
+
+export default Layout;

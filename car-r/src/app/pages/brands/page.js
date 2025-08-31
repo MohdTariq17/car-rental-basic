@@ -7,6 +7,10 @@ import { Sidebar } from "primereact/sidebar";
 import { InputText } from "primereact/inputtext";
 import { Dropdown } from "primereact/dropdown";
 import { Tag } from "primereact/tag";
+import { ConfirmDialog, confirmDialog } from "primereact/confirmdialog";
+import { Toast } from "primereact/toast";
+import Image from "next/image";
+import { useRef } from "react";
 
 /**
  * Car Brands Page (Admin Panel)
@@ -14,17 +18,43 @@ import { Tag } from "primereact/tag";
  * Features: Add, Edit, Delete
  */
 export default function CarBrandsPage() {
+  const toast = useRef(null);
+
   const [brands, setBrands] = useState([
-    { id: 1, name: "Toyota", status: "Active", logo: "https://1000logos.net/wp-content/uploads/2018/02/Toyota-Logo.png" },
-    { id: 2, name: "BMW", status: "Active", logo: "https://1000logos.net/wp-content/uploads/2018/02/BMW-Logo.png" },
-    { id: 3, name: "Mercedes-Benz", status: "Inactive", logo: "https://1000logos.net/wp-content/uploads/2018/02/Mercedes-Benz-Logo.png" },
-    { id: 4, name: "Tesla", status: "Active", logo: "https://1000logos.net/wp-content/uploads/2018/02/Tesla-Logo.png" },
-    { id: 5, name: "Hyundai", status: "Active", logo: "https://1000logos.net/wp-content/uploads/2018/02/Hyundai-logo.png" },
+    { 
+      id: 1, 
+      name: "Toyota", 
+      status: "Active", 
+      logo: "https://upload.wikimedia.org/wikipedia/commons/thumb/2/2d/Toyota-Toyota.jpg/640px-Toyota-Toyota.jpg"
+    },
+    { 
+      id: 2, 
+      name: "BMW", 
+      status: "Active", 
+      logo: "https://upload.wikimedia.org/wikipedia/commons/4/44/BMW.svg" 
+    },
+    { 
+      id: 3, 
+      name: "Mercedes-Benz", 
+      status: "Inactive", 
+      logo: "https://upload.wikimedia.org/wikipedia/commons/9/90/Mercedes-Logo.svg" 
+    },
+    { 
+      id: 4, 
+      name: "Tesla", 
+      status: "Active", 
+      logo: "https://upload.wikimedia.org/wikipedia/commons/e/e8/Tesla_logo.png" 
+    },
+    { 
+      id: 5, 
+      name: "Hyundai", 
+      status: "Active", 
+      logo: "https://upload.wikimedia.org/wikipedia/commons/4/44/Hyundai_Motor_Company_logo.svg" 
+    },
   ]);
 
   const [editVisible, setEditVisible] = useState(false);
   const [editing, setEditing] = useState(null);
-
   const [editName, setEditName] = useState("");
   const [editStatus, setEditStatus] = useState("");
   const [editLogo, setEditLogo] = useState("");
@@ -54,41 +84,98 @@ export default function CarBrandsPage() {
 
   // Save Edit or Add
   const saveEdit = () => {
+    if (!editName.trim()) {
+      toast.current.show({
+        severity: 'error',
+        summary: 'Error',
+        detail: 'Brand name is required',
+        life: 3000
+      });
+      return;
+    }
+
     if (editing) {
       // Update existing brand
       setBrands((prev) =>
         prev.map((b) =>
-          b.id === editing.id ? { ...b, name: editName, status: editStatus, logo: editLogo } : b
+          b.id === editing.id ? { 
+            ...b, 
+            name: editName.trim(), 
+            status: editStatus, 
+            logo: editLogo.trim() || "https://upload.wikimedia.org/wikipedia/commons/thumb/f/fe/Logo_missing.svg/640px-Logo_missing.svg.png" 
+          } : b
         )
       );
+      toast.current.show({
+        severity: 'success',
+        summary: 'Success',
+        detail: 'Brand updated successfully',
+        life: 3000
+      });
     } else {
       // Add new brand
       const newBrand = {
-        id: brands.length + 1,
-        name: editName,
+        id: Math.max(...brands.map(b => b.id), 0) + 1,
+        name: editName.trim(),
         status: editStatus,
-        logo: editLogo || "https://via.placeholder.com/100x50.png?text=Logo",
+        logo: editLogo.trim() || "https://upload.wikimedia.org/wikipedia/commons/thumb/f/fe/Logo_missing.svg/640px-Logo_missing.svg.png",
       };
       setBrands((prev) => [...prev, newBrand]);
+      toast.current.show({
+        severity: 'success',
+        summary: 'Success',
+        detail: 'Brand added successfully',
+        life: 3000
+      });
     }
+    
     setEditVisible(false);
     setEditing(null);
   };
 
-  // Delete brand
+  // Delete brand with confirmation
   const removeBrand = (row) => {
-    if (confirm(`Delete ${row.name}?`)) {
-      setBrands((prev) => prev.filter((b) => b.id !== row.id));
-    }
+    confirmDialog({
+      message: `Are you sure you want to delete ${row.name}?`,
+      header: 'Delete Confirmation',
+      icon: 'pi pi-info-circle',
+      acceptClassName: 'p-button-danger',
+      accept: () => {
+        setBrands((prev) => prev.filter((b) => b.id !== row.id));
+        toast.current.show({
+          severity: 'info',
+          summary: 'Deleted',
+          detail: `${row.name} has been deleted`,
+          life: 3000
+        });
+      }
+    });
+  };
+
+  // Close sidebar
+  const closeSidebar = () => {
+    setEditVisible(false);
+    setEditing(null);
+    setEditName("");
+    setEditStatus("Active");
+    setEditLogo("");
   };
 
   // Table custom cells
   const logoBody = (row) => (
-    <img
-      src={row.logo}
-      alt={row.name}
-      style={{ width: "50px", height: "50px", objectFit: "contain" }}
-    />
+    <div className="flex justify-content-center">
+      <Image
+        src={row.logo}
+        alt={`${row.name} logo`}
+        width={50}
+        height={50}
+        style={{ objectFit: "contain" }}
+        className="border-round"
+        onError={(e) => {
+          e.target.src = "https://upload.wikimedia.org/wikipedia/commons/thumb/f/fe/Logo_missing.svg/640px-Logo_missing.svg.png";
+        }}
+      />
+    </div>
   );
 
   const statusBody = (row) => (
@@ -109,6 +196,8 @@ export default function CarBrandsPage() {
         aria-label="Edit"
         className="p-button-sm"
         onClick={() => openEdit(row)}
+        tooltip="Edit brand"
+        tooltipOptions={{ position: 'top' }}
       />
       <Button
         icon="pi pi-trash"
@@ -118,14 +207,19 @@ export default function CarBrandsPage() {
         aria-label="Delete"
         className="p-button-sm"
         onClick={() => removeBrand(row)}
+        tooltip="Delete brand"
+        tooltipOptions={{ position: 'top' }}
       />
     </div>
   );
 
   return (
     <div className="p-6">
-      <div className="flex justify-between items-center mb-4">
-        <h1 className="text-2xl font-semibold">Car Brands</h1>
+      <Toast ref={toast} />
+      <ConfirmDialog />
+      
+      <div className="flex justify-content-between align-items-center mb-4">
+        <h1 className="text-3xl font-bold">Car Brands</h1>
         <Button
           label="Add Brand"
           icon="pi pi-plus"
@@ -137,62 +231,120 @@ export default function CarBrandsPage() {
       <DataTable
         value={brands}
         paginator
-        rows={5}
-        className="rounded-2xl shadow-1"
+        rows={10}
+        rowsPerPageOptions={[5, 10, 25]}
+        className="p-datatable-striped"
         tableStyle={{ minWidth: "40rem" }}
+        emptyMessage="No brands found"
+        responsiveLayout="scroll"
       >
-        <Column header="Logo" body={logoBody} style={{ width: "100px" }} />
-        <Column field="name" header="Brand" sortable />
-        <Column field="status" header="Status" body={statusBody} sortable />
-        <Column header="Action" body={actionBody} style={{ width: "120px" }} />
+        <Column 
+          header="Logo" 
+          body={logoBody} 
+          style={{ width: "100px", textAlign: "center" }} 
+        />
+        <Column 
+          field="name" 
+          header="Brand Name" 
+          sortable 
+          style={{ minWidth: "200px" }}
+        />
+        <Column 
+          field="status" 
+          header="Status" 
+          body={statusBody} 
+          sortable 
+          style={{ width: "120px" }}
+        />
+        <Column 
+          header="Actions" 
+          body={actionBody} 
+          style={{ width: "120px", textAlign: "center" }}
+        />
       </DataTable>
 
       {/* Add/Edit Sidebar */}
       <Sidebar
         visible={editVisible}
         position="right"
-        onHide={() => setEditVisible(false)}
+        onHide={closeSidebar}
+        className="w-full md:w-20rem lg:w-30rem"
+        header={editing ? "Edit Brand" : "Add New Brand"}
       >
-        <h2 className="mb-4">{editing ? "Edit Brand" : "Add Brand"}</h2>
-        <div className="p-fluid flex flex-col gap-3">
-          <span className="p-float-label">
+        <div className="p-fluid flex flex-column gap-4">
+          <div className="field">
+            <label htmlFor="edit-name" className="block font-medium mb-2">
+              Brand Name *
+            </label>
             <InputText
               id="edit-name"
               value={editName}
               onChange={(e) => setEditName(e.target.value)}
+              placeholder="Enter brand name"
+              className="w-full"
             />
-            <label htmlFor="edit-name">Name</label>
-          </span>
+          </div>
 
-          <span className="p-float-label">
+          <div className="field">
+            <label htmlFor="edit-status" className="block font-medium mb-2">
+              Status *
+            </label>
             <Dropdown
               id="edit-status"
               value={editStatus}
               options={statusOptions}
               onChange={(e) => setEditStatus(e.value)}
               placeholder="Select Status"
+              className="w-full"
             />
-            <label htmlFor="edit-status">Status</label>
-          </span>
+          </div>
 
-          <span className="p-float-label">
+          <div className="field">
+            <label htmlFor="edit-logo" className="block font-medium mb-2">
+              Logo URL
+            </label>
             <InputText
               id="edit-logo"
               value={editLogo}
               onChange={(e) => setEditLogo(e.target.value)}
+              placeholder="Enter logo URL (optional)"
+              className="w-full"
             />
-            <label htmlFor="edit-logo">Logo URL</label>
-          </span>
+            <small className="text-600">
+              Leave empty to use default placeholder
+            </small>
+          </div>
 
-          <div className="flex gap-2 mt-3">
+          {/* Logo Preview */}
+          {editLogo && (
+            <div className="field">
+              <label className="block font-medium mb-2">Logo Preview</label>
+              <div className="flex justify-content-center p-3 border-1 border-300 border-round">
+                <Image
+                  src={editLogo}
+                  alt="Logo preview"
+                  width={80}
+                  height={80}
+                  style={{ objectFit: "contain" }}
+                  onError={(e) => {
+                    e.target.src = "https://upload.wikimedia.org/wikipedia/commons/thumb/f/fe/Logo_missing.svg/640px-Logo_missing.svg.png";
+                  }}
+                />
+              </div>
+            </div>
+          )}
+
+          <div className="flex gap-2 mt-4">
             <Button
               label="Cancel"
-              className="p-button-secondary"
-              onClick={() => setEditVisible(false)}
+              icon="pi pi-times"
+              className="p-button-secondary flex-1"
+              onClick={closeSidebar}
             />
             <Button
-              label={editing ? "Save Changes" : "Add Brand"}
-              className="p-button-success"
+              label={editing ? "Update Brand" : "Add Brand"}
+              icon="pi pi-check"
+              className="p-button-success flex-1"
               onClick={saveEdit}
             />
           </div>

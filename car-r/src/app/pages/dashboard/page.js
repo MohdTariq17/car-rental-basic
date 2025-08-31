@@ -110,7 +110,7 @@ export default function DashboardPage() {
       <div style={styles.dashboardHeader}>
         <h1 style={styles.dashboardTitle}>Dashboard</h1>
         <p style={styles.dashboardSubtitle}>
-          Welcome! Here's a quick overview of your car rental system.
+          Welcome! Here&apos;s a quick overview of your car rental system.
         </p>
       </div>
 
@@ -134,8 +134,6 @@ export default function DashboardPage() {
               <h2 style={styles.cardTitle}>Users</h2>
               <p style={styles.cardDescription}>
                 Manage all users
-                <br />
-                Ensure proper user roles and permissions
               </p>
             </div>
           </Card>
@@ -159,8 +157,6 @@ export default function DashboardPage() {
               <h2 style={styles.cardTitle}>Cars</h2>
               <p style={styles.cardDescription}>
                 View and add cars
-                <br />
-                Manage your car inventory effectively
               </p>
             </div>
           </Card>
@@ -184,58 +180,11 @@ export default function DashboardPage() {
               <h2 style={styles.cardTitle}>Bookings</h2>
               <p style={styles.cardDescription}>
                 Track reservations
-                <br />
-                Manage your bookings efficiently
               </p>
             </div>
           </Card>
         </div>
       </div>
-
-      {/* Responsive CSS using media queries in JavaScript */}
-      <style jsx>{`
-        @media (max-width: 768px) {
-          .dashboard-content {
-            padding: 1rem !important;
-          }
-          
-          .card-grid {
-            grid-template-columns: 1fr !important;
-            gap: 1rem !important;
-          }
-          
-          .dashboard-title {
-            font-size: 2rem !important;
-          }
-          
-          .icon-container {
-            width: 60px !important;
-            height: 60px !important;
-          }
-          
-          .icon {
-            font-size: 2.5rem !important;
-          }
-        }
-
-        @media (max-width: 480px) {
-          .dashboard-content {
-            padding: 0.5rem !important;
-          }
-          
-          .dashboard-title {
-            font-size: 1.75rem !important;
-          }
-          
-          .dashboard-subtitle {
-            font-size: 1rem !important;
-          }
-          
-          .card-content {
-            padding: 1.5rem !important;
-          }
-        }
-      `}</style>
     </div>
   );
 }

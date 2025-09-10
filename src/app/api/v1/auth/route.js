@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server';
-import { PrismaClient } from '@prisma/client';
+import { PrismaClient } from '../../../../../generated/client';
 import bcrypt from 'bcryptjs';
 import { generateToken } from '../../../util/jwt';
 
@@ -21,7 +21,7 @@ export async function POST(request) {
   try {
     console.log('Auth POST request received');
     console.log('Environment:', process.env.NODE_ENV);
-    console.log('Database URL exists:', !!process.env.DATABASE_URL);
+    console.log('Database URL exists:', !!process.env.DB_URL);
     
     // Check if Prisma is initialized
     if (!prisma) {

@@ -1,24 +1,26 @@
-"use client"
-import React, { useState, useEffect } from "react";
-import { useRouter } from "next/navigation";
-import { Eye, EyeOff, Moon, Sun, Car } from 'lucide-react';
+'use client';
+import React, { useState, useEffect } from 'react';
+import { Sun, Moon, Car, Mail, Lock, Eye, EyeOff } from 'lucide-react';
 
-const LoginScreen = () => {
-  const [email, setEmail] = useState("");
-  const [password, setPassword] = useState("");
-  const [error, setError] = useState("");
+const LoginPage = () => {
+  const [formData, setFormData] = useState({
+    email: '',
+    password: ''
+  });
+  const [errors, setErrors] = useState({});
   const [showPassword, setShowPassword] = useState(false);
-  const [isDarkMode, setIsDarkMode] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
-  const router = useRouter();
+  const [isDarkMode, setIsDarkMode] = useState(false);
 
   // Load dark mode preference
   useEffect(() => {
     const savedDarkMode = localStorage.getItem('darkMode') === 'true';
     const systemPrefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
     const shouldUseDark = savedDarkMode !== null ? savedDarkMode : systemPrefersDark;
-    
     setIsDarkMode(shouldUseDark);
+    if (shouldUseDark) {
+      document.documentElement.classList.add('dark');
+    }
   }, []);
 
   // Toggle dark mode
@@ -26,479 +28,262 @@ const LoginScreen = () => {
     const newDarkMode = !isDarkMode;
     setIsDarkMode(newDarkMode);
     localStorage.setItem('darkMode', newDarkMode.toString());
+    document.documentElement.classList.toggle('dark');
   };
 
-  // Enhanced validation
+  // Form validation
   const validateForm = () => {
-    if (!email || !password) {
-      setError("Please enter both email and password.");
-      return false;
+    const newErrors = {};
+    if (!formData.email) {
+      newErrors.email = 'Email is required';
+    } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.email)) {
+      newErrors.email = 'Please enter a valid email';
     }
-    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
-      setError("Please enter a valid email address.");
-      return false;
+
+    if (!formData.password) {
+      newErrors.password = 'Password is required';
+    } else if (formData.password.length < 6) {
+      newErrors.password = 'Password must be at least 6 characters';
     }
-    if (password.length < 6) {
-      setError("Password must be at least 6 characters.");
-      return false;
-    }
-    setError("");
-    return true;
+
+    setErrors(newErrors);
+    return Object.keys(newErrors).length === 0;
   };
 
-const handleSubmit = async (e) => {
-  e.preventDefault();
-  
-  if (!validateForm()) return;
-  
-  setIsLoading(true);
-  setErrors({});
-
-  try {
-    console.log('Attempting login with:', { email: formData.email.trim() });
+  // Handle form submission
+  const handleSubmit = async (e) => {
+    e.preventDefault();
     
-    const response = await fetch('/api/v1/auth', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({
-        email: formData.email.trim(),
-        password: formData.password
-      }),
-    });
+    if (!validateForm()) return;
+    
+    setIsLoading(true);
+    setErrors({});
 
-    console.log('Response status:', response.status);
-    console.log('Response headers:', Object.fromEntries(response.headers.entries()));
-
-    // Check if response has content
-    const contentType = response.headers.get('content-type');
-    if (!contentType || !contentType.includes('application/json')) {
-      throw new Error(`Server returned non-JSON response: ${response.status} ${response.statusText}`);
-    }
-
-    // Get response text first to check if it's empty
-    const responseText = await response.text();
-    console.log('Response text:', responseText);
-
-    if (!responseText) {
-      throw new Error('Server returned empty response');
-    }
-
-    let data;
     try {
-      data = JSON.parse(responseText);
-    } catch (parseError) {
-      console.error('JSON parse error:', parseError);
-      throw new Error(`Invalid JSON response: ${responseText.substring(0, 100)}`);
-    }
-
-    console.log('Parsed response data:', data);
-
-    if (response.ok && data.statusCode === 200) {
-      console.log('Login successful');
-      // Store token in localStorage as backup
-      if (data.data?.token) {
-        localStorage.setItem('authToken', data.data.token);
-      }
-      window.location.href = '/pages/dashboard';
-    } else {
-      console.error('Login failed:', data);
-      setErrors({
-        general: data.message || `Login failed: ${response.status}`
+      console.log('Attempting login with:', { email: formData.email.trim() });
+      
+      const response = await fetch('/api/v1/auth', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          email: formData.email.trim(),
+          password: formData.password
+        }),
       });
+
+      console.log('Response status:', response.status);
+      console.log('Response headers:', Object.fromEntries(response.headers.entries()));
+
+      // Check if response has content
+      const contentType = response.headers.get('content-type');
+      if (!contentType || !contentType.includes('application/json')) {
+        throw new Error(`Server returned non-JSON response: ${response.status} ${response.statusText}`);
+      }
+
+      // Get response text first to check if it's empty
+      const responseText = await response.text();
+      console.log('Response text:', responseText);
+
+      if (!responseText) {
+        throw new Error('Server returned empty response');
+      }
+
+      let data;
+      try {
+        data = JSON.parse(responseText);
+      } catch (parseError) {
+        console.error('JSON parse error:', parseError);
+        throw new Error(`Invalid JSON response: ${responseText.substring(0, 100)}`);
+      }
+
+      console.log('Parsed response data:', data);
+
+      if (response.ok && data.statusCode === 200) {
+        console.log('Login successful');
+        // Store token in localStorage as backup
+        if (data.data?.token) {
+          localStorage.setItem('authToken', data.data.token);
+        }
+        window.location.href = '/pages/dashboard';
+      } else {
+        console.error('Login failed:', data);
+        setErrors({
+          general: data.message || `Login failed: ${response.status}`
+        });
+      }
+    } catch (err) {
+      console.error('Login error:', err);
+      setErrors({
+        general: `Network error: ${err.message}`
+      });
+    } finally {
+      setIsLoading(false);
     }
-  } catch (err) {
-    console.error('Login error:', err);
-    setErrors({
-      general: `Network error: ${err.message}`
-    });
-  } finally {
-    setIsLoading(false);
-  }
-};
-
-// Dynamic styles based on dark mode
-const containerStyle = {
-  minHeight: "100vh",
-  display: "flex",
-  alignItems: "center",
-    justifyContent: "center",
-    background: isDarkMode 
-      ? "linear-gradient(135deg, #1a1a1a 0%, #2d2d2d 50%, #1a1a1a 100%)"
-      : "linear-gradient(135deg, #f8fafc 0%, #e2e8f0 50%, #f1f5f9 100%)",
-    padding: "1rem",
-    position: "relative",
-    overflow: "hidden"
   };
 
-  const backgroundElements = isDarkMode ? (
-    <>
-      <div style={{
-        position: "absolute",
-        top: "-10%",
-        right: "-10%",
-        width: "300px",
-        height: "300px",
-        background: "radial-gradient(circle, rgba(59, 130, 246, 0.1) 0%, transparent 70%)",
-        borderRadius: "50%",
-        filter: "blur(40px)"
-      }}></div>
-      <div style={{
-        position: "absolute",
-        bottom: "-10%",
-        left: "-10%",
-        width: "300px",
-        height: "300px",
-        background: "radial-gradient(circle, rgba(16, 185, 129, 0.1) 0%, transparent 70%)",
-        borderRadius: "50%",
-        filter: "blur(40px)"
-      }}></div>
-    </>
-  ) : (
-    <>
-      <div style={{
-        position: "absolute",
-        top: "-10%",
-        right: "-10%",
-        width: "300px",
-        height: "300px",
-        background: "radial-gradient(circle, rgba(59, 130, 246, 0.05) 0%, transparent 70%)",
-        borderRadius: "50%",
-        filter: "blur(40px)"
-      }}></div>
-      <div style={{
-        position: "absolute",
-        bottom: "-10%",
-        left: "-10%",
-        width: "300px",
-        height: "300px",
-        background: "radial-gradient(circle, rgba(16, 185, 129, 0.05) 0%, transparent 70%)",
-        borderRadius: "50%",
-        filter: "blur(40px)"
-      }}></div>
-    </>
-  );
-
-  const formStyle = {
-    display: "flex",
-    flexDirection: "column",
-    gap: "1.5rem",
-    width: "380px",
-    maxWidth: "90vw",
-    padding: "2.5rem",
-    border: isDarkMode ? "1px solid #374151" : "1px solid #e5e7eb",
-    borderRadius: "16px",
-    background: isDarkMode 
-      ? "rgba(31, 41, 55, 0.8)"
-      : "rgba(255, 255, 255, 0.8)",
-    backdropFilter: "blur(20px)",
-    boxShadow: isDarkMode
-      ? "0 25px 50px -12px rgba(0, 0, 0, 0.5), 0 0 0 1px rgba(255, 255, 255, 0.05)"
-      : "0 25px 50px -12px rgba(0, 0, 0, 0.1), 0 0 0 1px rgba(255, 255, 255, 0.5)",
-    position: "relative"
-  };
-
-  const headerStyle = {
-    textAlign: "center",
-    marginBottom: "1rem"
-  };
-
-  const iconContainerStyle = {
-    width: "64px",
-    height: "64px",
-    background: isDarkMode
-      ? "linear-gradient(135deg, #f9fafb 0%, #e5e7eb 100%)"
-      : "linear-gradient(135deg, #1f2937 0%, #374151 100%)",
-    borderRadius: "16px",
-    display: "flex",
-    alignItems: "center",
-    justifyContent: "center",
-    margin: "0 auto 1.5rem auto",
-    boxShadow: isDarkMode
-      ? "0 10px 25px -3px rgba(0, 0, 0, 0.3)"
-      : "0 10px 25px -3px rgba(0, 0, 0, 0.1)"
-  };
-
-  const titleStyle = {
-    color: isDarkMode ? "#f9fafb" : "#1f2937",
-    fontSize: "1.75rem",
-    fontWeight: "300",
-    margin: "0 0 0.5rem 0",
-    letterSpacing: "0.025em"
-  };
-
-  const subtitleStyle = {
-    color: isDarkMode ? "#9ca3af" : "#6b7280",
-    fontSize: "0.875rem",
-    fontWeight: "300",
-    margin: "0"
-  };
-
-  const inputContainerStyle = {
-    position: "relative",
-    display: "flex",
-    flexDirection: "column",
-    gap: "0.5rem"
-  };
-
-  const labelStyle = {
-    color: isDarkMode ? "#d1d5db" : "#374151",
-    fontSize: "0.875rem",
-    fontWeight: "500",
-    marginBottom: "0.5rem"
-  };
-
-  const inputStyle = {
-    padding: "1rem 1rem 1rem 1rem",
-    borderRadius: "12px",
-    border: isDarkMode ? "1px solid #4b5563" : "1px solid #d1d5db",
-    background: isDarkMode 
-      ? "rgba(55, 65, 81, 0.5)" 
-      : "rgba(255, 255, 255, 0.7)",
-    color: isDarkMode ? "#f9fafb" : "#1f2937",
-    fontSize: "1rem",
-    transition: "all 0.2s ease",
-    outline: "none",
-    backdropFilter: "blur(10px)"
-  };
-
-  const passwordInputStyle = {
-    ...inputStyle,
-    paddingRight: "3rem"
-  };
-
-  const toggleButtonStyle = {
-    position: "absolute",
-    right: "1rem",
-    top: "50%",
-    transform: "translateY(-50%)",
-    background: "none",
-    border: "none",
-    color: isDarkMode ? "#9ca3af" : "#6b7280",
-    cursor: "pointer",
-    padding: "0.25rem",
-    borderRadius: "4px",
-    transition: "color 0.2s ease"
-  };
-
-  const errorStyle = {
-    color: "#ef4444",
-    fontSize: "0.875rem",
-    padding: "0.75rem",
-    background: isDarkMode ? "rgba(239, 68, 68, 0.1)" : "rgba(239, 68, 68, 0.05)",
-    borderRadius: "8px",
-    border: "1px solid rgba(239, 68, 68, 0.2)",
-    margin: "0"
-  };
-
-  const buttonStyle = {
-    padding: "1rem",
-    borderRadius: "12px",
-    border: "none",
-    background: isDarkMode
-      ? "linear-gradient(135deg, #f9fafb 0%, #e5e7eb 100%)"
-      : "linear-gradient(135deg, #1f2937 0%, #374151 100%)",
-    color: isDarkMode ? "#1f2937" : "#f9fafb",
-    fontWeight: "600",
-    fontSize: "1rem",
-    cursor: isLoading ? "not-allowed" : "pointer",
-    transition: "all 0.3s ease",
-    boxShadow: isDarkMode
-      ? "0 4px 14px 0 rgba(0, 0, 0, 0.2)"
-      : "0 4px 14px 0 rgba(0, 0, 0, 0.1)",
-    opacity: isLoading ? 0.7 : 1,
-    transform: isLoading ? "scale(1)" : "scale(1)",
-    display: "flex",
-    alignItems: "center",
-    justifyContent: "center",
-    gap: "0.5rem"
-  };
-
-  const darkModeToggleStyle = {
-    position: "absolute",
-    top: "1.5rem",
-    right: "1.5rem",
-    background: isDarkMode 
-      ? "rgba(55, 65, 81, 0.8)" 
-      : "rgba(255, 255, 255, 0.8)",
-    border: isDarkMode ? "1px solid #4b5563" : "1px solid #d1d5db",
-    borderRadius: "12px",
-    padding: "0.75rem",
-    cursor: "pointer",
-    backdropFilter: "blur(10px)",
-    transition: "all 0.2s ease",
-    zIndex: 10
-  };
-
-  const footerStyle = {
-    textAlign: "center",
-    marginTop: "1.5rem"
-  };
-
-  const footerTextStyle = {
-    color: isDarkMode ? "#6b7280" : "#9ca3af",
-    fontSize: "0.75rem",
-    fontWeight: "300",
-    margin: "0"
+  // Handle input changes
+  const handleInputChange = (e) => {
+    const { name, value } = e.target;
+    setFormData((prev) => ({
+      ...prev,
+      [name]: value
+    }));
+    // Clear error when user starts typing
+    if (errors[name]) {
+      setErrors((prev) => ({
+        ...prev,
+        [name]: undefined
+      }));
+    }
   };
 
   return (
-    <div style={containerStyle}>
-      {backgroundElements}
-      
-      {/* Dark Mode Toggle */}
+    <div className="min-h-screen bg-gradient-to-br from-gray-50 via-white to-gray-100 dark:from-slate-950 dark:via-gray-950 dark:to-black flex items-center justify-center p-4 transition-colors duration-300">
+      {/* Dark mode toggle button */}
       <button
         onClick={toggleDarkMode}
-        style={darkModeToggleStyle}
-        onMouseEnter={(e) => {
-          e.target.style.transform = "scale(1.05)";
-        }}
-        onMouseLeave={(e) => {
-          e.target.style.transform = "scale(1)";
-        }}
+        className="fixed top-6 right-6 p-3 rounded-full bg-white/90 dark:bg-slate-800/90 backdrop-blur-md border border-gray-200/60 dark:border-slate-600/60 shadow-lg dark:shadow-2xl hover:shadow-xl dark:hover:shadow-slate-900/50 transition-all duration-300 hover:scale-105 z-10 group"
+        aria-label="Toggle dark mode"
       >
         {isDarkMode ? (
-          <Sun style={{ width: "20px", height: "20px", color: "#fbbf24" }} />
+          <Sun className="w-5 h-5 text-amber-500 group-hover:text-amber-400 transition-colors duration-200" />
         ) : (
-          <Moon style={{ width: "20px", height: "20px", color: "#6b7280" }} />
+          <Moon className="w-5 h-5 text-gray-600 group-hover:text-gray-700 transition-colors duration-200" />
         )}
       </button>
 
-      <form onSubmit={handleSubmit} style={formStyle}>
-        {/* Header */}
-        <div style={headerStyle}>
-          <div style={iconContainerStyle}>
-            <Car style={{ 
-              width: "32px", 
-              height: "32px", 
-              color: isDarkMode ? "#1f2937" : "#f9fafb" 
-            }} />
+      {/* Background decorations */}
+      <div className="absolute inset-0 overflow-hidden">
+        <div className="absolute -top-40 -right-40 w-80 h-80 bg-gradient-to-br from-blue-400/20 to-purple-600/20 dark:from-blue-600/30 dark:to-purple-800/30 rounded-full blur-3xl animate-pulse" />
+        <div className="absolute -bottom-40 -left-40 w-80 h-80 bg-gradient-to-tr from-emerald-400/20 to-blue-600/20 dark:from-emerald-600/30 dark:to-blue-800/30 rounded-full blur-3xl animate-pulse delay-1000" />
+        <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 w-96 h-96 bg-gradient-to-r from-violet-500/10 to-pink-500/10 dark:from-violet-600/20 dark:to-pink-600/20 rounded-full blur-3xl animate-pulse delay-500" />
+      </div>
+
+      {/* Login form */}
+      <div className="relative w-full max-w-md">
+        <div className="bg-white/80 dark:bg-slate-800/90 backdrop-blur-xl rounded-3xl shadow-2xl dark:shadow-slate-950/50 border border-white/30 dark:border-slate-600/40 p-8 transition-all duration-300">
+          {/* Header */}
+          <div className="text-center mb-8">
+            <div className="w-16 h-16 bg-gradient-to-r from-gray-900 to-gray-700 dark:from-slate-100 dark:to-gray-100 rounded-2xl flex items-center justify-center mx-auto mb-6 shadow-lg dark:shadow-slate-900/50 transition-all duration-300 hover:scale-105">
+              <Car className="w-8 h-8 text-white dark:text-slate-900 transition-colors duration-300" />
+            </div>
+            <h1 className="text-2xl font-light text-gray-900 dark:text-slate-100 mb-2 tracking-wide transition-colors duration-300">
+              Welcome back
+            </h1>
+            <p className="text-gray-500 dark:text-slate-400 text-sm font-light transition-colors duration-300">
+              Sign in to your account
+            </p>
           </div>
-          <h2 style={titleStyle}>Welcome back</h2>
-          <p style={subtitleStyle}>Sign in to your account</p>
-        </div>
 
-        {/* Email Input */}
-        <div style={inputContainerStyle}>
-          <label style={labelStyle}>Email</label>
-          <input
-            type="email"
-            placeholder="Enter your email"
-            value={email}
-            style={inputStyle}
-            onChange={(e) => setEmail(e.target.value)}
-            onFocus={(e) => {
-              e.target.style.borderColor = isDarkMode ? "#60a5fa" : "#3b82f6";
-              e.target.style.boxShadow = isDarkMode 
-                ? "0 0 0 3px rgba(96, 165, 250, 0.1)"
-                : "0 0 0 3px rgba(59, 130, 246, 0.1)";
-            }}
-            onBlur={(e) => {
-              e.target.style.borderColor = isDarkMode ? "#4b5563" : "#d1d5db";
-              e.target.style.boxShadow = "none";
-            }}
-          />
-        </div>
+          {/* Error message */}
+          {errors.general && (
+            <div className="mb-6 p-4 bg-red-50/90 dark:bg-red-950/50 border-l-4 border-red-400 dark:border-red-500 rounded-r-lg backdrop-blur-sm">
+              <p className="text-red-700 dark:text-red-300 text-sm font-medium">
+                {errors.general}
+              </p>
+            </div>
+          )}
 
-        {/* Password Input */}
-        <div style={inputContainerStyle}>
-          <label style={labelStyle}>Password</label>
-          <div style={{ position: "relative" }}>
-            <input
-              type={showPassword ? "text" : "password"}
-              placeholder="Enter your password"
-              value={password}
-              style={passwordInputStyle}
-              onChange={(e) => setPassword(e.target.value)}
-              onFocus={(e) => {
-                e.target.style.borderColor = isDarkMode ? "#60a5fa" : "#3b82f6";
-                e.target.style.boxShadow = isDarkMode 
-                  ? "0 0 0 3px rgba(96, 165, 250, 0.1)"
-                  : "0 0 0 3px rgba(59, 130, 246, 0.1)";
-              }}
-              onBlur={(e) => {
-                e.target.style.borderColor = isDarkMode ? "#4b5563" : "#d1d5db";
-                e.target.style.boxShadow = "none";
-              }}
-            />
+          {/* Form */}
+          <form onSubmit={handleSubmit} className="space-y-6">
+            {/* Email field */}
+            <div className="space-y-2">
+              <label htmlFor="email" className="block text-sm font-medium text-gray-700 dark:text-slate-300 transition-colors duration-300">
+                Email
+              </label>
+              <div className="relative">
+                <input
+                  type="email"
+                  id="email"
+                  name="email"
+                  value={formData.email}
+                  onChange={handleInputChange}
+                  className={`w-full px-4 py-4 pl-12 bg-white/70 dark:bg-slate-700/70 border ${
+                    errors.email ? 'border-red-300 dark:border-red-500' : 'border-gray-200/60 dark:border-slate-600/60'
+                  } rounded-xl focus:outline-none focus:ring-2 focus:ring-gray-900 dark:focus:ring-slate-300 focus:border-transparent text-gray-900 dark:text-slate-100 placeholder-gray-400 dark:placeholder-slate-500 transition-all duration-200 backdrop-blur-sm hover:bg-white/80 dark:hover:bg-slate-700/80`}
+                  placeholder="Enter your email"
+                />
+                <Mail className="absolute left-4 top-4 w-5 h-5 text-gray-400 dark:text-slate-500 transition-colors duration-300" />
+              </div>
+              {errors.email && (
+                <p className="text-red-500 dark:text-red-400 text-xs mt-1 ml-1">
+                  {errors.email}
+                </p>
+              )}
+            </div>
+
+            {/* Password field */}
+            <div className="space-y-2">
+              <label htmlFor="password" className="block text-sm font-medium text-gray-700 dark:text-slate-300 transition-colors duration-300">
+                Password
+              </label>
+              <div className="relative">
+                <input
+                  type={showPassword ? 'text' : 'password'}
+                  id="password"
+                  name="password"
+                  value={formData.password}
+                  onChange={handleInputChange}
+                  className={`w-full px-4 py-4 pl-12 pr-12 bg-white/70 dark:bg-slate-700/70 border ${
+                    errors.password ? 'border-red-300 dark:border-red-500' : 'border-gray-200/60 dark:border-slate-600/60'
+                  } rounded-xl focus:outline-none focus:ring-2 focus:ring-gray-900 dark:focus:ring-slate-300 focus:border-transparent text-gray-900 dark:text-slate-100 placeholder-gray-400 dark:placeholder-slate-500 transition-all duration-200 backdrop-blur-sm hover:bg-white/80 dark:hover:bg-slate-700/80`}
+                  placeholder="Enter your password"
+                />
+                <Lock className="absolute left-4 top-4 w-5 h-5 text-gray-400 dark:text-slate-500 transition-colors duration-300" />
+                <button
+                  type="button"
+                  onClick={() => setShowPassword(!showPassword)}
+                  className="absolute right-4 top-4 text-gray-400 dark:text-slate-500 hover:text-gray-600 dark:hover:text-slate-300 transition-colors duration-200"
+                >
+                  {showPassword ? (
+                    <EyeOff className="w-5 h-5" />
+                  ) : (
+                    <Eye className="w-5 h-5" />
+                  )}
+                </button>
+              </div>
+              {errors.password && (
+                <p className="text-red-500 dark:text-red-400 text-xs mt-1 ml-1">
+                  {errors.password}
+                </p>
+              )}
+            </div>
+
+            {/* Submit button */}
             <button
-              type="button"
-              onClick={() => setShowPassword(!showPassword)}
-              style={toggleButtonStyle}
-              onMouseEnter={(e) => {
-                e.target.style.color = isDarkMode ? "#d1d5db" : "#374151";
-              }}
-              onMouseLeave={(e) => {
-                e.target.style.color = isDarkMode ? "#9ca3af" : "#6b7280";
-              }}
+              type="submit"
+              disabled={isLoading}
+              className="w-full py-4 px-4 bg-gradient-to-r from-gray-900 to-gray-700 dark:from-slate-100 dark:to-gray-100 text-white dark:text-slate-900 font-medium rounded-xl hover:from-gray-800 hover:to-gray-600 dark:hover:from-slate-50 dark:hover:to-gray-50 focus:outline-none focus:ring-2 focus:ring-gray-900 dark:focus:ring-slate-300 focus:ring-offset-2 dark:focus:ring-offset-slate-800 transition-all duration-200 shadow-lg dark:shadow-slate-900/50 hover:shadow-xl dark:hover:shadow-slate-900/70 disabled:opacity-70 disabled:cursor-not-allowed hover:scale-[1.02] disabled:hover:scale-100"
             >
-              {showPassword ? (
-                <EyeOff style={{ width: "20px", height: "20px" }} />
+              {isLoading ? (
+                <span className="flex items-center justify-center">
+                  <svg className="animate-spin -ml-1 mr-3 h-5 w-5 text-white dark:text-slate-900" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                  </svg>
+                  Signing in...
+                </span>
               ) : (
-                <Eye style={{ width: "20px", height: "20px" }} />
+                'Sign In'
               )}
             </button>
+          </form>
+
+          {/* Footer */}
+          <div className="mt-8 text-center">
+            <p className="text-gray-500 dark:text-slate-400 text-sm transition-colors duration-300">
+              Don't have an account?{' '}
+              <a href="/register" className="text-gray-900 dark:text-slate-200 font-medium hover:underline hover:text-gray-700 dark:hover:text-slate-100 transition-colors duration-200">
+                Register here
+              </a>
+            </p>
           </div>
         </div>
-
-        {/* Error Message */}
-        {error && <div style={errorStyle}>{error}</div>}
-
-        {/* Submit Button */}
-        <button
-          type="submit"
-          disabled={isLoading}
-          style={buttonStyle}
-          onMouseEnter={(e) => {
-            if (!isLoading) {
-              e.target.style.transform = "scale(1.02)";
-              e.target.style.boxShadow = isDarkMode
-                ? "0 8px 25px 0 rgba(0, 0, 0, 0.3)"
-                : "0 8px 25px 0 rgba(0, 0, 0, 0.15)";
-            }
-          }}
-          onMouseLeave={(e) => {
-            if (!isLoading) {
-              e.target.style.transform = "scale(1)";
-              e.target.style.boxShadow = isDarkMode
-                ? "0 4px 14px 0 rgba(0, 0, 0, 0.2)"
-                : "0 4px 14px 0 rgba(0, 0, 0, 0.1)";
-            }
-          }}
-        >
-          {isLoading ? (
-            <>
-              <div style={{
-                width: "20px",
-                height: "20px",
-                border: `2px solid ${isDarkMode ? "#374151" : "#e5e7eb"}`,
-                borderTop: `2px solid ${isDarkMode ? "#1f2937" : "#f9fafb"}`,
-                borderRadius: "50%",
-                animation: "spin 1s linear infinite"
-              }}></div>
-              Signing in...
-            </>
-          ) : (
-            'Sign in'
-          )}
-        </button>
-
-        {/* Footer */}
-        <div style={footerStyle}>
-          <p style={footerTextStyle}>Premium car rental experience</p>
-        </div>
-      </form>
-
-      {/* CSS for spinner animation */}
-      <style jsx>{`
-        @keyframes spin {
-          0% { transform: rotate(0deg); }
-          100% { transform: rotate(360deg); }
-        }
-      `}</style>
+      </div>
     </div>
   );
 };
 
-export default LoginScreen;
+export default LoginPage;

@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server';
 import bcrypt from 'bcryptjs';
-import { generateToken, verifyToken } from '../../../util/jwt';
+
 import { PrismaClient } from '../../../../../generated/client';
 
 const prisma = new PrismaClient();

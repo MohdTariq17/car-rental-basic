@@ -1,5 +1,5 @@
 import { SignJWT, jwtVerify } from 'jose';
-import { SignJWT, jwtVerify } from 'jose';
+
 
 const secret = new TextEncoder().encode(
   process.env.JWT_SECRET || 'your-secret-key-here-make-it-long-and-secure'

@@ -1,5 +1,5 @@
-import { verifyToken } from './app/util/jwt';
 import { NextResponse } from 'next/server';
+import { verifyToken } from './app/util/jwt';
 
 export async function middleware(request) {
   const { pathname } = request.nextUrl;
@@ -64,4 +64,17 @@ export async function middleware(request) {
     
     return response;
   }
+}
+
+export const config = {
+  matcher: [
+    /*
+     * Match all request paths except for the ones starting with:
+     * - api (API routes)
+     * - _next/static (static files)
+     * - _next/image (image optimization files)
+     * - favicon.ico (favicon file)
+     */
+    '/((?!_next/static|_next/image|favicon.ico).*)',
+  ],
 }

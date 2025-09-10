@@ -55,12 +55,26 @@ const LoginScreen = () => {
     setError("");
 
     try {
-      // Simulate API call
-      await new Promise(resolve => setTimeout(resolve, 1500));
-      
-      // Replace with your authentication logic
-      console.log('Login successful:', { email, password });
-      router.push("/pages/dashboard"); // Redirect to dashboard page on successful login
+      // Call your authentication API
+      const response = await fetch('/api/v1/auth', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          email: email.trim(),
+          password: password
+        }),
+      });
+
+      const data = await response.json();
+
+      if (response.ok && data.statusCode === 200) {
+        console.log('Login successful:', { email, password });
+        router.push("/pages/dashboard"); // Redirect to dashboard page on successful login
+      } else {
+        setError(data.message || "Login failed. Please try again.");
+      }
     } catch (err) {
       setError("Login failed. Please try again.");
     } finally {

@@ -46,42 +46,45 @@ const LoginScreen = () => {
     return true;
   };
 
-  const handleSubmit = async (e) => {
-    e.preventDefault();
-    
-    if (!validateForm()) return;
-    
-    setIsLoading(true);
-    setError("");
-
-    try {
-      // Call your authentication API
-      const response = await fetch('/api/v1/auth', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          email: email.trim(),
-          password: password
-        }),
-      });
-
-      const data = await response.json();
-
-      if (response.ok && data.statusCode === 200) {
-        console.log('Login successful:', { email, password });
-        router.push("/pages/dashboard"); // Redirect to dashboard page on successful login
-      } else {
-        setError(data.message || "Login failed. Please try again.");
-      }
-    } catch (err) {
-      setError("Login failed. Please try again.");
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
+ const handleSubmit = async (e) => {
+   e.preventDefault();
+   
+   if (!validateForm()) return;
+   
+   setIsLoading(true);
+   setError("");
+ 
+   try {
+     console.log('Attempting login with:', { email: email.trim() });
+     
+     const response = await fetch('/api/v1/auth', {
+       method: 'POST',
+       headers: {
+         'Content-Type': 'application/json',
+       },
+       body: JSON.stringify({
+         email: email.trim(),
+         password: password
+       }),
+     });
+ 
+     const data = await response.json();
+     console.log('Login response:', { status: response.status, data });
+ 
+     if (response.ok && data.statusCode === 200) {
+       console.log('Login successful');
+       router.push("/pages/dashboard");
+     } else {
+       console.error('Login failed:', data);
+       setError(data.message || `Login failed: ${response.status}`);
+     }
+   } catch (err) {
+     console.error('Login error:', err);
+     setError(`Network error: ${err.message}`);
+   } finally {
+     setIsLoading(false);
+   }
+ };
   // Dynamic styles based on dark mode
   const containerStyle = {
     minHeight: "100vh",

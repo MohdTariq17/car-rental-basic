@@ -8,22 +8,33 @@ const prisma = new PrismaClient();
 // LOGIN
 export async function POST(request) {
   try {
-    const { email, password } = await request.json();
+    console.log('Auth POST request received');
+    
+    const body = await request.json();
+    console.log('Request body:', { email: body.email, hasPassword: !!body.password });
+    
+    const { email, password } = body;
     
     // Validate input
     if (!email || !password) {
+      console.log('Missing email or password');
       return NextResponse.json(
         { message: "Email and password are required", statusCode: 400 },
         { status: 400 }
       );
     }
 
+    console.log('Searching for user with email:', email);
+    
     // Find user
     const user = await prisma.user.findUnique({
-      where: { email },
+      where: { email: email.toLowerCase().trim() },
     });
     
+    console.log('User found:', !!user);
+    
     if (!user) {
+      console.log('User not found');
       return NextResponse.json(
         { message: "Invalid credentials", statusCode: 401 },
         { status: 401 }
@@ -32,21 +43,29 @@ export async function POST(request) {
     
     // Check if user is active
     if (!user.is_active) {
+      console.log('User account is deactivated');
       return NextResponse.json(
         { message: "Account is deactivated", statusCode: 403 },
         { status: 403 }
       );
     }
     
+    console.log('Verifying password');
+    
     // Verify password
     const isPasswordValid = await bcrypt.compare(password, user.password);
     
+    console.log('Password valid:', isPasswordValid);
+    
     if (!isPasswordValid) {
+      console.log('Invalid password');
       return NextResponse.json(
         { message: "Invalid credentials", statusCode: 401 },
         { status: 401 }
       );
     }
+    
+    console.log('Generating token');
     
     // Generate token
     const tokenPayload = {
@@ -57,6 +76,8 @@ export async function POST(request) {
     };
     
     const token = await generateToken(tokenPayload);
+    
+    console.log('Token generated successfully');
     
     // Remove password from response
     const { password: _, ...userWithoutPassword } = user;
@@ -79,12 +100,22 @@ export async function POST(request) {
       path: '/'
     });
     
+    console.log('Login successful for user:', email);
     return response;
     
   } catch (error) {
-    console.error('Auth error:', error);
+    console.error('Auth error details:', {
+      message: error.message,
+      stack: error.stack,
+      name: error.name
+    });
+    
     return NextResponse.json(
-      { message: "Internal server error", statusCode: 500 },
+      { 
+        message: "Internal server error", 
+        statusCode: 500,
+        error: process.env.NODE_ENV === 'development' ? error.message : undefined
+      },
       { status: 500 }
     );
   } finally {
@@ -95,6 +126,8 @@ export async function POST(request) {
 // REGISTER
 export async function PUT(request) {
   try {
+    console.log('Auth PUT request received');
+    
     const { email, password, name, role } = await request.json();
     
     // Validate input
@@ -107,7 +140,7 @@ export async function PUT(request) {
 
     // Check if user already exists
     const existingUser = await prisma.user.findUnique({
-      where: { email }
+      where: { email: email.toLowerCase().trim() }
     });
 
     if (existingUser) {
@@ -123,7 +156,7 @@ export async function PUT(request) {
     // Create user
     const user = await prisma.user.create({
       data: {
-        email,
+        email: email.toLowerCase().trim(),
         password: hashedPassword,
         name,
         role: role || 'USER',
@@ -143,7 +176,11 @@ export async function PUT(request) {
   } catch (error) {
     console.error('Registration error:', error);
     return NextResponse.json(
-      { message: "Internal server error", statusCode: 500 },
+      { 
+        message: "Internal server error", 
+        statusCode: 500,
+        error: process.env.NODE_ENV === 'development' ? error.message : undefined
+      },
       { status: 500 }
     );
   } finally {
@@ -173,6 +210,7 @@ export async function GET(request) {
     });
 
   } catch (error) {
+    console.error('Token verification error:', error);
     return NextResponse.json(
       { message: "Invalid token", statusCode: 401 },
       { status: 401 }

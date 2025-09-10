@@ -3,14 +3,42 @@ import bcrypt from 'bcryptjs';
 import { generateToken, verifyToken } from '../../../util/jwt';
 import { PrismaClient } from '../../../../../generated/client';
 
-const prisma = new PrismaClient();
+let prisma;
+
+// Initialize Prisma client with error handling
+try {
+  prisma = new PrismaClient({
+    log: ['error', 'warn'],
+  });
+} catch (error) {
+  console.error('Failed to initialize Prisma client:', error);
+}
 
 // LOGIN
 export async function POST(request) {
   try {
     console.log('Auth POST request received');
     
-    const body = await request.json();
+    // Check if Prisma is initialized
+    if (!prisma) {
+      console.error('Prisma client not initialized');
+      return NextResponse.json(
+        { message: "Database connection error", statusCode: 500 },
+        { status: 500 }
+      );
+    }
+
+    let body;
+    try {
+      body = await request.json();
+    } catch (parseError) {
+      console.error('Failed to parse request body:', parseError);
+      return NextResponse.json(
+        { message: "Invalid request body", statusCode: 400 },
+        { status: 400 }
+      );
+    }
+
     console.log('Request body:', { email: body.email, hasPassword: !!body.password });
     
     const { email, password } = body;
@@ -26,10 +54,15 @@ export async function POST(request) {
 
     console.log('Searching for user with email:', email);
     
-    // Find user
-    const user = await prisma.user.findUnique({
-      where: { email: email.toLowerCase().trim() },
-    });
+    // Find user with timeout
+    const user = await Promise.race([
+      prisma.user.findUnique({
+        where: { email: email.toLowerCase().trim() },
+      }),
+      new Promise((_, reject) => 
+        setTimeout(() => reject(new Error('Database query timeout')), 10000)
+      )
+    ]);
     
     console.log('User found:', !!user);
     
@@ -82,16 +115,24 @@ export async function POST(request) {
     // Remove password from response
     const { password: _, ...userWithoutPassword } = user;
     
-    // Set HTTP-only cookie
-    const response = NextResponse.json({
+    // Create response
+    const responseData = {
       message: "Login successful",
       data: {
         token,
         user: userWithoutPassword
       },
       statusCode: 200
+    };
+
+    const response = NextResponse.json(responseData, { 
+      status: 200,
+      headers: {
+        'Content-Type': 'application/json',
+      }
     });
 
+    // Set HTTP-only cookie
     response.cookies.set('authToken', token, {
       httpOnly: true,
       secure: process.env.NODE_ENV === 'production',
@@ -110,16 +151,20 @@ export async function POST(request) {
       name: error.name
     });
     
+    // Ensure we always return a valid JSON response
     return NextResponse.json(
       { 
         message: "Internal server error", 
         statusCode: 500,
-        error: process.env.NODE_ENV === 'development' ? error.message : undefined
+        error: process.env.NODE_ENV === 'development' ? error.message : 'Something went wrong'
       },
-      { status: 500 }
+      { 
+        status: 500,
+        headers: {
+          'Content-Type': 'application/json',
+        }
+      }
     );
-  } finally {
-    await prisma.$disconnect();
   }
 }
 
@@ -128,6 +173,13 @@ export async function PUT(request) {
   try {
     console.log('Auth PUT request received');
     
+    if (!prisma) {
+      return NextResponse.json(
+        { message: "Database connection error", statusCode: 500 },
+        { status: 500 }
+      );
+    }
+
     const { email, password, name, role } = await request.json();
     
     // Validate input
@@ -171,7 +223,12 @@ export async function PUT(request) {
       message: "User registered successfully",
       data: userWithoutPassword,
       statusCode: 201
-    }, { status: 201 });
+    }, { 
+      status: 201,
+      headers: {
+        'Content-Type': 'application/json',
+      }
+    });
 
   } catch (error) {
     console.error('Registration error:', error);
@@ -179,12 +236,15 @@ export async function PUT(request) {
       { 
         message: "Internal server error", 
         statusCode: 500,
-        error: process.env.NODE_ENV === 'development' ? error.message : undefined
+        error: process.env.NODE_ENV === 'development' ? error.message : 'Something went wrong'
       },
-      { status: 500 }
+      { 
+        status: 500,
+        headers: {
+          'Content-Type': 'application/json',
+        }
+      }
     );
-  } finally {
-    await prisma.$disconnect();
   }
 }
 

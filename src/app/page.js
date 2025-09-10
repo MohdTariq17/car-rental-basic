@@ -46,50 +46,83 @@ const LoginScreen = () => {
     return true;
   };
 
- const handleSubmit = async (e) => {
-   e.preventDefault();
-   
-   if (!validateForm()) return;
-   
-   setIsLoading(true);
-   setError("");
- 
-   try {
-     console.log('Attempting login with:', { email: email.trim() });
-     
-     const response = await fetch('/api/v1/auth', {
-       method: 'POST',
-       headers: {
-         'Content-Type': 'application/json',
-       },
-       body: JSON.stringify({
-         email: email.trim(),
-         password: password
-       }),
-     });
- 
-     const data = await response.json();
-     console.log('Login response:', { status: response.status, data });
- 
-     if (response.ok && data.statusCode === 200) {
-       console.log('Login successful');
-       router.push("/pages/dashboard");
-     } else {
-       console.error('Login failed:', data);
-       setError(data.message || `Login failed: ${response.status}`);
-     }
-   } catch (err) {
-     console.error('Login error:', err);
-     setError(`Network error: ${err.message}`);
-   } finally {
-     setIsLoading(false);
-   }
- };
-  // Dynamic styles based on dark mode
-  const containerStyle = {
-    minHeight: "100vh",
-    display: "flex",
-    alignItems: "center",
+const handleSubmit = async (e) => {
+  e.preventDefault();
+  
+  if (!validateForm()) return;
+  
+  setIsLoading(true);
+  setErrors({});
+
+  try {
+    console.log('Attempting login with:', { email: formData.email.trim() });
+    
+    const response = await fetch('/api/v1/auth', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        email: formData.email.trim(),
+        password: formData.password
+      }),
+    });
+
+    console.log('Response status:', response.status);
+    console.log('Response headers:', Object.fromEntries(response.headers.entries()));
+
+    // Check if response has content
+    const contentType = response.headers.get('content-type');
+    if (!contentType || !contentType.includes('application/json')) {
+      throw new Error(`Server returned non-JSON response: ${response.status} ${response.statusText}`);
+    }
+
+    // Get response text first to check if it's empty
+    const responseText = await response.text();
+    console.log('Response text:', responseText);
+
+    if (!responseText) {
+      throw new Error('Server returned empty response');
+    }
+
+    let data;
+    try {
+      data = JSON.parse(responseText);
+    } catch (parseError) {
+      console.error('JSON parse error:', parseError);
+      throw new Error(`Invalid JSON response: ${responseText.substring(0, 100)}`);
+    }
+
+    console.log('Parsed response data:', data);
+
+    if (response.ok && data.statusCode === 200) {
+      console.log('Login successful');
+      // Store token in localStorage as backup
+      if (data.data?.token) {
+        localStorage.setItem('authToken', data.data.token);
+      }
+      window.location.href = '/pages/dashboard';
+    } else {
+      console.error('Login failed:', data);
+      setErrors({
+        general: data.message || `Login failed: ${response.status}`
+      });
+    }
+  } catch (err) {
+    console.error('Login error:', err);
+    setErrors({
+      general: `Network error: ${err.message}`
+    });
+  } finally {
+    setIsLoading(false);
+  }
+};
+
+// Dynamic styles based on dark mode
+const containerStyle = {
+  minHeight: "100vh",
+  display: "flex",
+  alignItems: "center",
     justifyContent: "center",
     background: isDarkMode 
       ? "linear-gradient(135deg, #1a1a1a 0%, #2d2d2d 50%, #1a1a1a 100%)"

@@ -43,7 +43,7 @@ export async function POST(request) {
     
     if (!isPasswordValid) {
       return NextResponse.json(
-        { message: "Invalid credentials", statusCode: 401 },
+        { message: "Invalid Email or Password", statusCode: 401 },
         { status: 401 }
       );
     }

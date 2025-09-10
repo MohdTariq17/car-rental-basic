@@ -10,5 +10,8 @@
   "regions": ["iad1"],
   "env": {
     "NODE_ENV": "production"
-  }
+  },
+    "buildCommand": "npm run build",
+  "installCommand": "npm install && npx prisma generate"
+
 }

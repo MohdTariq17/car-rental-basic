@@ -1,30 +1,23 @@
 import { SignJWT, jwtVerify } from 'jose';
+import { SignJWT, jwtVerify } from 'jose';
 
-const secretKey = new TextEncoder().encode(
-  process.env.JWT_SECRET || 'your-secret-key-change-in-production'
+const secret = new TextEncoder().encode(
+  process.env.JWT_SECRET || 'your-secret-key-here-make-it-long-and-secure'
 );
 
 export async function generateToken(payload) {
-  try {
-    const token = await new SignJWT(payload)
-      .setProtectedHeader({ alg: 'HS256' })
-      .setIssuedAt()
-      .setExpirationTime('24h')
-      .sign(secretKey);
-    
-    return token;
-  } catch (error) {
-    console.error('Token generation error:', error);
-    throw new Error('Failed to generate token');
-  }
+  return await new SignJWT(payload)
+    .setProtectedHeader({ alg: 'HS256' })
+    .setIssuedAt()
+    .setExpirationTime('24h')
+    .sign(secret);
 }
 
 export async function verifyToken(token) {
   try {
-    const { payload } = await jwtVerify(token, secretKey);
+    const { payload } = await jwtVerify(token, secret);
     return payload;
   } catch (error) {
-    console.error('Token verification error:', error);
     throw new Error('Invalid token');
   }
 }

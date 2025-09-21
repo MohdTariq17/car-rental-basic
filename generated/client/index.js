@@ -139,6 +139,14 @@ const config = {
         "fromEnvVar": null,
         "value": "debian-openssl-3.0.x",
         "native": true
+      },
+      {
+        "fromEnvVar": null,
+        "value": "rhel-openssl-3.0.x"
+      },
+      {
+        "fromEnvVar": null,
+        "value": "debian-openssl-3.0.x"
       }
     ],
     "previewFeatures": [],
@@ -156,7 +164,7 @@ const config = {
     "db"
   ],
   "activeProvider": "mongodb",
-  "postinstall": true,
+  "postinstall": false,
   "inlineDatasources": {
     "db": {
       "url": {
@@ -165,8 +173,8 @@ const config = {
       }
     }
   },
-  "inlineSchema": "generator client {\n  provider = \"prisma-client-js\"\n  output   = \"../generated/client\"\n}\n\ndatasource db {\n  provider = \"mongodb\"\n  url      = env(\"DB_URL\")\n}\n\nenum Role {\n  USER\n  ADMIN\n  HOSTER\n  DRIVER\n  MECHANIC\n  CUSTOMER\n  MANAGER\n}\n\nmodel user {\n  id        String  @id @default(auto()) @map(\"_id\") @db.ObjectId\n  email     String  @unique\n  password  String\n  name      String\n  role      Role\n  is_active Boolean @default(true)\n}\n",
-  "inlineSchemaHash": "36071a602af432f0cce06162bbec03d8e723eceb103bfa9db1dc935d77afc220",
+  "inlineSchema": "generator client {\n  provider      = \"prisma-client-js\"\n  output        = \"../generated/client\"\n  binaryTargets = [\"native\", \"rhel-openssl-3.0.x\", \"debian-openssl-3.0.x\"]\n}\n\ndatasource db {\n  provider = \"mongodb\"\n  url      = env(\"DB_URL\")\n}\n\nenum Role {\n  USER\n  ADMIN\n  HOSTER\n  DRIVER\n  MECHANIC\n  CUSTOMER\n  MANAGER\n}\n\nmodel user {\n  id        String  @id @default(auto()) @map(\"_id\") @db.ObjectId\n  email     String  @unique\n  password  String\n  name      String\n  role      Role\n  is_active Boolean @default(true)\n}\n",
+  "inlineSchemaHash": "e63e5b29529b873bdd08bc6049ad9c0494b809c069b2243f3703f5ad7fdd6ac0",
   "copyEngine": true
 }
 
@@ -207,6 +215,10 @@ Object.assign(exports, Prisma)
 // file annotations for bundling tools to include these files
 path.join(__dirname, "libquery_engine-debian-openssl-3.0.x.so.node");
 path.join(process.cwd(), "generated/client/libquery_engine-debian-openssl-3.0.x.so.node")
+
+// file annotations for bundling tools to include these files
+path.join(__dirname, "libquery_engine-rhel-openssl-3.0.x.so.node");
+path.join(process.cwd(), "generated/client/libquery_engine-rhel-openssl-3.0.x.so.node")
 // file annotations for bundling tools to include these files
 path.join(__dirname, "schema.prisma");
 path.join(process.cwd(), "generated/client/schema.prisma")

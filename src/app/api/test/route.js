@@ -1,33 +1,23 @@
-import { prisma } from ../../../../../lib/prisma;
+import { prisma } from '../../../lib/prisma';
 import { NextResponse } from 'next/server';
 
 export async function GET() {
   try {
-    import { prisma } from "../../../../lib/prisma";
-    
-    // Test database connection
-    await prisma.$connect();
-    
-    // Try to count users
-    const userCount = await prisma.user.count();
-    
-    await prisma.$disconnect();
-    
-    return NextResponse.json({
-      message: "Database connection successful",
-      userCount,
-      timestamp: new Date().toISOString(),
-      statusCode: 200
+    const users = await prisma.user.findMany({
+      select: {
+        id: true,
+        name: true,
+        email: true,
+        role: true,
+        is_active: true
+      }
     });
-    
+    return NextResponse.json({ success: true, data: users });
   } catch (error) {
-    console.error('Database test error:', error);
-    
-    return NextResponse.json({
-      message: "Database connection failed",
-      error: error.message,
-      timestamp: new Date().toISOString(),
-      statusCode: 500
+    console.error('Test route error:', error);
+    return NextResponse.json({ 
+      success: false, 
+      error: 'Database connection failed' 
     }, { status: 500 });
   }
 }

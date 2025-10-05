@@ -1,8 +1,10 @@
 'use client';
-import React, { useState, useEffect } from 'react';
 import { Sun, Moon, Car, Mail, Lock, Eye, EyeOff } from 'lucide-react';
+import React, { useState, useEffect } from 'react';
+import { useRouter } from 'next/navigation';
 
 const LoginPage = () => {
+  const router = useRouter();
   const [formData, setFormData] = useState({
     email: '',
     password: ''
@@ -98,6 +100,7 @@ const LoginPage = () => {
     
     setIsLoading(true);
     setErrors({});
+    
     try {
       console.log('Attempting login with:', { email: formData.email.trim() });
       
@@ -111,44 +114,34 @@ const LoginPage = () => {
           password: formData.password
         }),
       });
+
       console.log('Response status:', response.status);
-      console.log('Response headers:', Object.fromEntries(response.headers.entries()));
-
-      // Check if response has content
-      const contentType = response.headers.get('content-type');
-      if (!contentType || !contentType.includes('application/json')) {
-        throw new Error(`Server returned non-JSON response: ${response.status} ${response.statusText}`);
-      }
-
-      // Get response text first to check if it's empty
-      const responseText = await response.text();
-      console.log('Response text:', responseText);
       
-      if (!responseText) {
-        throw new Error('Server returned empty response');
-      }
-
-      let data;
-      try {
-        data = JSON.parse(responseText);
-      } catch (parseError) {
-        console.error('JSON parse error:', parseError);
-        throw new Error(`Invalid JSON response: ${responseText.substring(0, 100)}`);
-      }
-
+      const data = await response.json();
       console.log('Parsed response data:', data);
 
-      if (response.ok && data.statusCode === 200) {
+      // Fixed condition: Check for success in response
+      if (response.ok && data.success) {
         console.log('Login successful');
-        // Store token in localStorage as backup
+        
+        // Store token in localStorage and cookie
         if (data.data?.token) {
           localStorage.setItem('authToken', data.data.token);
+          // Set cookie for server-side authentication
+          document.cookie = `authToken=${data.data.token}; path=/; max-age=86400; secure; samesite=strict`;
         }
-        window.location.href = '/pages/dashboard';
+        
+        // Store user data
+        if (data.data?.user) {
+          localStorage.setItem('user', JSON.stringify(data.data.user));
+        }
+        
+        // Redirect to dashboard
+        router.push('/pages/dashboard');
       } else {
         console.error('Login failed:', data);
         setErrors({
-          general: data.message || `Login failed: ${response.status}`
+          general: data.error || data.message || 'Login failed'
         });
       }
     } catch (err) {

@@ -1,34 +1,20 @@
-import { prisma } from ../../../../../lib/prisma;
+import { prisma } from '../../../../../lib/prisma';
 import { NextResponse } from 'next/server';
-
-
-import { prisma } from "../../../../lib/prisma";
 
 // GET /api/v1/brands/[id] - Get single brand
 export async function GET(request, { params }) {
   try {
-    const { id } = await params;
-
     const brand = await prisma.brand.findUnique({
-      where: { id },
-      select: {
-        id: true,
-        name: true,
-        logo: true,
-        active: true,        // ✅ Correct field name
-        models: true,        // ✅ Available in your schema
-        createdAt: true,
-        updatedAt: true,
+      where: { id: params.id },
+      include: {
+        models: true
       }
     });
-
+    
     if (!brand) {
-      return NextResponse.json(
-        { message: "Brand not found", statusCode: 404 },
-        { status: 404 }
-      );
+      return NextResponse.json({ error: 'Brand not found' }, { status: 404 });
     }
-
+    
     return NextResponse.json({
       message: "Brand fetched successfully",
       brand: brand,
@@ -48,60 +34,15 @@ export async function GET(request, { params }) {
 // PUT /api/v1/brands/[id] - Update brand
 export async function PUT(request, { params }) {
   try {
-    const { id } = await params;
-    const { name, logo, active } = await request.json();
-
-    console.log('Request body:', { name, logo, active });
-
-    // Check if brand exists
-    const existingBrand = await prisma.brand.findUnique({
-      where: { id }
+    const data = await request.json();
+    const brand = await prisma.brand.update({
+      where: { id: params.id },
+      data
     });
-
-    if (!existingBrand) {
-      return NextResponse.json(
-        { message: "Brand not found", statusCode: 404 },
-        { status: 404 }
-      );
-    }
-
-    // Check if name is taken by another brand
-    if (name && name !== existingBrand.name) {
-      const nameConflict = await prisma.brand.findUnique({
-        where: { name }
-      });
-
-      if (nameConflict) {
-        return NextResponse.json(
-          { message: "Brand name already exists", statusCode: 409 },
-          { status: 409 }
-        );
-      }
-    }
-
-    const updatedBrand = await prisma.brand.update({
-      where: { id },
-      data: {
-        ...(name && { name }),
-        ...(logo !== undefined && { logo }),
-        ...(active !== undefined && { active }),
-        updatedAt: new Date(),
-      },
-      select: {
-        id: true,
-        name: true,
-        logo: true,
-        active: true,      // ✅ Matches your schema exactly
-        createdAt: true,
-        updatedAt: true,
-        // ❌ Removed: description (doesn't exist in your Brand model)
-        // ❌ Removed: is_active (your field is named 'active')
-      }
-    });
-
+    
     return NextResponse.json({
       message: "Brand updated successfully",
-      brand: updatedBrand,
+      brand: brand,
       statusCode: 200
     });
   } catch (error) {
@@ -118,36 +59,10 @@ export async function PUT(request, { params }) {
 // DELETE /api/v1/brands/[id] - Delete brand
 export async function DELETE(request, { params }) {
   try {
-    const { id } = await params;
-
-    // Check if brand exists
-    const existingBrand = await prisma.brand.findUnique({
-      where: { id }
-    });
-
-    if (!existingBrand) {
-      return NextResponse.json(
-        { message: "Brand not found", statusCode: 404 },
-        { status: 404 }
-      );
-    }
-
-    // Check if brand has models before deleting (referential integrity)
-    const modelsCount = await prisma.model.count({
-      where: { brandId: id }
-    });
-
-    if (modelsCount > 0) {
-      return NextResponse.json(
-        { message: "Cannot delete brand with existing models", statusCode: 400 },
-        { status: 400 }
-      );
-    }
-
     await prisma.brand.delete({
-      where: { id }
+      where: { id: params.id }
     });
-
+    
     return NextResponse.json({
       message: "Brand deleted successfully",
       statusCode: 200

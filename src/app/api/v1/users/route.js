@@ -1,186 +1,166 @@
-import { NextResponse } from 'next/server';
-import { PrismaClient } from '../../../../../generated/client';
 
-// Create a singleton instance
-let prisma;
-
-if (process.env.NODE_ENV === 'production') {
-  prisma = new PrismaClient();
-} else {
-  if (!global.__prisma) {
-    global.__prisma = new PrismaClient();
-  }
-  prisma = global.__prisma;
-}
+import { prisma } from '../../../../lib/prisma';
 
 export async function GET(request) {
   try {
     const { searchParams } = new URL(request.url);
-    const skip = parseInt(searchParams.get('skip') || '0');
-    const take = parseInt(searchParams.get('limit') || '10');
-    const sortField = searchParams.get('sortField') || 'created_at'; // Fixed field name
-    const sortOrder = parseInt(searchParams.get('sortOrder') || '-1');
-    const filters = JSON.parse(searchParams.get('filters') || '{}');
-
+    
+    // Handle both parameter formats
+    let page, limit, skip;
+    
+    // Check if using skip/limit format (from your frontend)
+    if (searchParams.has('skip')) {
+      skip = parseInt(searchParams.get('skip')) || 0;
+      limit = parseInt(searchParams.get('limit')) || 10;
+      page = Math.floor(skip / limit) + 1;
+    } else {
+      // Use page/limit format
+      page = parseInt(searchParams.get('page')) || 1;
+      limit = parseInt(searchParams.get('limit')) || 10;
+      skip = (page - 1) * limit;
+    }
+    
+    const role = searchParams.get('role');
+    const search = searchParams.get('search');
+    const sortField = searchParams.get('sortField') || 'created_at';
+    const sortOrder = parseInt(searchParams.get('sortOrder')) || -1;
+    
     // Build where clause
-    const where = {};
-    
-    if (filters.role) {
-      where.role = filters.role.toUpperCase();
-    }
-    
-    if (filters.search) {
-      where.OR = [
-        { name: { contains: filters.search, mode: 'insensitive' } },
-        { email: { contains: filters.search, mode: 'insensitive' } },
-        { username: { contains: filters.search, mode: 'insensitive' } }
-      ];
-    }
-
-    // Build orderBy - use correct field names
-    const orderBy = {};
-    // Map frontend field names to database field names
-    const fieldMapping = {
-      'createdAt': 'created_at',
-      'updatedAt': 'updated_at',
-      'isActive': 'is_active'
+    const whereClause = {
+      AND: [
+        role ? { role } : {},
+        search ? {
+          OR: [
+            { name: { contains: search, mode: 'insensitive' } },
+            { email: { contains: search, mode: 'insensitive' } },
+            { username: { contains: search, mode: 'insensitive' } }
+          ]
+        } : {}
+      ]
     };
     
-    const dbField = fieldMapping[sortField] || sortField;
-    orderBy[dbField] = sortOrder === 1 ? 'asc' : 'desc';
-
-    // Get users
-    const users = await prisma.user.findMany({
-      where,
-      skip,
-      take,
-      orderBy,
-      select: {
-        id: true,
-        name: true,
-        username: true,
-        email: true,
-        mobile: true,
-        role: true,
-        is_active: true,
-        email_verified: true,
-        mobile_verified: true,
-        created_at: true,
-        updated_at: true,
-      },
-    });
-
-    // Get total count
-    const totalCount = await prisma.user.count({ where });
-
-    // Transform response to match frontend expectations
-    const transformedUsers = users.map(user => ({
-      ...user,
-      createdAt: user.created_at,
-      updatedAt: user.updated_at,
-      isActive: user.is_active,
-      emailVerified: user.email_verified,
-      mobileVerified: user.mobile_verified
-    }));
-
-    return NextResponse.json({
+    // Build order by clause
+    const orderByField = sortField === 'createdAt' ? 'created_at' : sortField;
+    const orderBy = { [orderByField]: sortOrder === -1 ? 'desc' : 'asc' };
+    
+    console.log('Query params:', { skip, limit, page, whereClause, orderBy });
+    
+    const [users, total] = await Promise.all([
+      prisma.user.findMany({
+        where: whereClause,
+        select: {
+          id: true,
+          name: true,
+          email: true,
+          mobile: true,
+          username: true,
+          role: true,
+          is_active: true,
+          email_verified: true,
+          mobile_verified: true,
+          created_at: true,
+          updated_at: true
+        },
+        skip,
+        take: limit,
+        orderBy
+      }),
+      prisma.user.count({ where: whereClause })
+    ]);
+    
+    console.log(`Found ${users.length} users out of ${total} total`);
+    
+    // Return in format expected by frontend
+    return Response.json({
       success: true,
-      users: transformedUsers,
-      totalCount,
+      users: users,
+      totalCount: total,
+      data: {
+        users,
+        pagination: {
+          page,
+          limit,
+          total,
+          pages: Math.ceil(total / limit)
+        }
+      }
     });
   } catch (error) {
     console.error('Error fetching users:', error);
-    return NextResponse.json(
-      { success: false, error: error.message },
-      { status: 500 }
-    );
+    return Response.json({ 
+      success: false, 
+      error: 'Failed to fetch users',
+      details: process.env.NODE_ENV === 'development' ? error.message : undefined
+    }, { status: 500 });
   }
 }
 
 export async function POST(request) {
   try {
-    const body = await request.json();
-    const { name, email, mobile, username, password, role } = body;
-
-    // Validation
-    if (!name || !email || !mobile || !username || !password || !role) {
-      return NextResponse.json(
-        { message: "All fields are required", statusCode: 400 },
-        { status: 400 }
-      );
+    const data = await request.json();
+    const { name, email, mobile, username, password, role = 'USER' } = data;
+    
+    if (!name || !email || !mobile || !username || !password) {
+      return Response.json({ 
+        success: false, 
+        error: 'All fields are required' 
+      }, { status: 400 });
     }
-
-    // Check for existing user
+    
     const existingUser = await prisma.user.findFirst({
       where: {
         OR: [
-          { email: email },
-          { username: username },
-          { mobile: mobile }
+          { email: email.toLowerCase().trim() },
+          { mobile: mobile.trim() },
+          { username: username.toLowerCase().trim() }
         ]
       }
     });
-
+    
     if (existingUser) {
-      let field = 'field';
-      if (existingUser.email === email) field = 'email';
-      else if (existingUser.username === username) field = 'username';
-      else if (existingUser.mobile === mobile) field = 'mobile';
-      
-      return NextResponse.json(
-        { message: `User with this ${field} already exists`, statusCode: 400 },
-        { status: 400 }
-      );
+      return Response.json({ 
+        success: false, 
+        error: 'User already exists with this email, mobile, or username' 
+      }, { status: 409 });
     }
-
-    // Create user
-    const newUser = await prisma.user.create({
+    
+    const bcrypt = require('bcryptjs');
+    const hashedPassword = await bcrypt.hash(password, 12);
+    
+    const user = await prisma.user.create({
       data: {
         name: name.trim(),
         email: email.toLowerCase().trim(),
         mobile: mobile.trim(),
         username: username.toLowerCase().trim(),
-        password: password,
-        role: role.toUpperCase(),
-        is_active: true,
-        email_verified: false,
-        mobile_verified: false
+        password: hashedPassword,
+        role
       },
       select: {
         id: true,
         name: true,
-        username: true,
         email: true,
         mobile: true,
+        username: true,
         role: true,
         is_active: true,
         email_verified: true,
         mobile_verified: true,
         created_at: true,
-        updated_at: true,
+        updated_at: true
       }
     });
-
-    // Transform response
-    const transformedUser = {
-      ...newUser,
-      createdAt: newUser.created_at,
-      updatedAt: newUser.updated_at,
-      isActive: newUser.is_active,
-      emailVerified: newUser.email_verified,
-      mobileVerified: newUser.mobile_verified
-    };
-
-    return NextResponse.json({
-      message: "User created successfully",
-      user: transformedUser,
-      statusCode: 201
-    });
+    
+    return Response.json({
+      success: true,
+      data: user
+    }, { status: 201 });
   } catch (error) {
     console.error('Error creating user:', error);
-    return NextResponse.json(
-      { message: "Failed to create user", error: error.message, statusCode: 500 },
-      { status: 500 }
-    );
+    return Response.json({ 
+      success: false, 
+      error: 'Failed to create user',
+      details: process.env.NODE_ENV === 'development' ? error.message : undefined
+    }, { status: 500 });
   }
 }

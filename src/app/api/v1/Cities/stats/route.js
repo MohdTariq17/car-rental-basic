@@ -35,8 +35,59 @@ export async function POST(request) {
 
 import { NextResponse } from 'next/server';
 
+export async function GET() {
+  try {
+    const [totalCount, activeCount, inactiveCount] = await Promise.all([
+      prisma.city.count(),
+      prisma.city.count({ where: { active: true } }),
+      prisma.city.count({ where: { active: false } })
+    ]);
 
-import { prisma } from "../../../../lib/prisma";
+    // Get cities grouped by state
+    const citiesByState = await prisma.state.findMany({
+      include: {
+        _count: {
+          select: {
+            cities: true
+          }
+        },
+        cities: {
+          select: {
+            id: true,
+            name: true,
+            active: true
+          }
+        }
+      },
+      orderBy: {
+        name: 'asc'
+      }
+    });
+
+    return NextResponse.json({
+      success: true,
+      data: {
+        totalCount,
+        activeCount,
+        inactiveCount,
+        citiesByState: citiesByState.map(state => ({
+          stateId: state.id,
+          stateName: state.name,
+          stateCode: state.code,
+          stateActive: state.active,
+          cityCount: state._count.cities,
+          cities: state.cities
+        }))
+      }
+    });
+  } catch (error) {
+    console.error('Error fetching city statistics:', error);
+    return NextResponse.json({
+      success: false,
+      error: 'Failed to fetch city statistics'
+    }, { status: 500 });
+  }
+}
 
 export async function POST(request) {
   try {
@@ -110,60 +161,6 @@ export async function POST(request) {
     return NextResponse.json({
       success: false,
       error: 'Failed to fetch filtered city statistics'
-    }, { status: 500 });
-  }
-}
-
-export async function GET() {
-  try {
-    const [totalCount, activeCount, inactiveCount] = await Promise.all([
-      prisma.city.count(),
-      prisma.city.count({ where: { active: true } }),
-      prisma.city.count({ where: { active: false } })
-    ]);
-
-    // Get cities grouped by state
-    const citiesByState = await prisma.state.findMany({
-      include: {
-        _count: {
-          select: {
-            cities: true
-          }
-        },
-        cities: {
-          select: {
-            id: true,
-            name: true,
-            active: true
-          }
-        }
-      },
-      orderBy: {
-        name: 'asc'
-      }
-    });
-
-    return NextResponse.json({
-      success: true,
-      data: {
-        totalCount,
-        activeCount,
-        inactiveCount,
-        citiesByState: citiesByState.map(state => ({
-          stateId: state.id,
-          stateName: state.name,
-          stateCode: state.code,
-          stateActive: state.active,
-          cityCount: state._count.cities,
-          cities: state.cities
-        }))
-      }
-    });
-  } catch (error) {
-    console.error('Error fetching city statistics:', error);
-    return NextResponse.json({
-      success: false,
-      error: 'Failed to fetch city statistics'
     }, { status: 500 });
   }
 }

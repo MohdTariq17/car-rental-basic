@@ -11,7 +11,7 @@
   "env": {
     "NODE_ENV": "production"
   },
-    "buildCommand": "npm run build",
-  "installCommand": "npm install && npx prisma generate"
-
+  "buildCommand": "npm run build",
+  "devCommand": "npm run dev",
+  "installCommand": "npm install"
 }

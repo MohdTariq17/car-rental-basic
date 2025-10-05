@@ -134,10 +134,65 @@ export class UserDAL {
   }
 }
 
-import { UserDAL } from '../dal/userDAL.js';
 import bcrypt from 'bcryptjs';
 
 export class UserService {
+  static async getAllUsers(options = {}) {
+    return await UserDAL.findMany(options);
+  }
+
+  static async getUserById(id) {
+    return await UserDAL.findById(id);
+  }
+
+  static async getUserByEmail(email) {
+    return await UserDAL.findByEmail(email);
+  }
+
+  static async getUserByUsername(username) {
+    return await UserDAL.findByUsername(username);
+  }
+
+  static async createUser(userData) {
+    // Hash password if provided
+    if (userData.password) {
+      userData.password = await bcrypt.hash(userData.password, 12);
+    }
+    return await UserDAL.create(userData);
+  }
+
+  static async updateUser(id, userData) {
+    // Hash password if provided
+    if (userData.password) {
+      userData.password = await bcrypt.hash(userData.password, 12);
+    }
+    return await UserDAL.update(id, userData);
+  }
+
+  static async deleteUser(id) {
+    return await UserDAL.delete(id);
+  }
+
+  static async getProviders(options = {}) {
+    return await UserDAL.findProviders(options);
+  }
+
+  static async validateUserCredentials(email, password) {
+    const user = await UserDAL.findByEmail(email);
+    if (!user) {
+      return null;
+    }
+
+    const isValidPassword = await bcrypt.compare(password, user.password);
+    if (!isValidPassword) {
+      return null;
+    }
+
+    // Remove password from returned user object
+    const { password: _, ...userWithoutPassword } = user;
+    return userWithoutPassword;
+  }
+
   static async getUsers(options = {}) {
     try {
       const users = await UserDAL.findMany(options);

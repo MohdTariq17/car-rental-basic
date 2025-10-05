@@ -166,6 +166,7 @@ export default function UsersPage() {
     fetchUsers(newState, false);
   };
 
+  // Fixed onFilter function (note the lowercase 'o')
   const onFilter = (event) => {
     const newState = {
       ...lazyState,

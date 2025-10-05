@@ -1,5 +1,7 @@
 
-import { prisma } from '../lib/prisma';
+import { PrismaClient } from '../../generated/client';
+
+const prisma = new PrismaClient();
 
 export class UserDAL {
   static async findMany(options = {}) {
@@ -133,3 +135,35 @@ export class UserDAL {
     });
   }
 }
+
+export const providerService = {
+  // Add your provider service methods here
+  async getAllProviders() {
+    return await prisma.provider.findMany();
+  },
+  
+  async getProviderById(id) {
+    return await prisma.provider.findUnique({
+      where: { id }
+    });
+  },
+  
+  async createProvider(data) {
+    return await prisma.provider.create({
+      data
+    });
+  },
+  
+  async updateProvider(id, data) {
+    return await prisma.provider.update({
+      where: { id },
+      data
+    });
+  },
+  
+  async deleteProvider(id) {
+    return await prisma.provider.delete({
+      where: { id }
+    });
+  }
+};

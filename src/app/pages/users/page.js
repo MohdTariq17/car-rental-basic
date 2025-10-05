@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect, useRef } from "react";
+import React, { useState, useEffect, useRef, useCallback } from "react";
 import { DataTable } from "primereact/datatable";
 import { Column } from "primereact/column";
 import { Button } from "primereact/button";
@@ -14,9 +14,8 @@ import { FloatLabel } from "primereact/floatlabel";
 import { Paginator } from "primereact/paginator";
 import { BreadCrumb } from "primereact/breadcrumb";
 
-// Restricted roles - ye add nahi kar sakte
+// Restricted roles - cannot be added from this page
 const roles = [
-  { label: "User", value: "USER" },
   { label: "Admin", value: "ADMIN" },
   { label: "Driver", value: "DRIVER" },
   { label: "Mechanic", value: "MECHANIC" },
@@ -25,7 +24,6 @@ const roles = [
 
 // All roles for filter dropdown
 const allRoles = [
-  { label: "All Roles", value: null },
   { label: "User", value: "USER" },
   { label: "Admin", value: "ADMIN" },
   { label: "Provider", value: "PROVIDER" },
@@ -54,30 +52,16 @@ export default function UsersPage() {
   const [saving, setSaving] = useState(false);
   const [formErrors, setFormErrors] = useState({});
   
-  // Search states
-  const [nameSearch, setNameSearch] = useState("");
-  const [usernameSearch, setUsernameSearch] = useState("");
+  // Search and filter states
+  const [globalFilter, setGlobalFilter] = useState("");
   const [roleFilter, setRoleFilter] = useState(null);
-  const [globalFilter, setGlobalFilter] = useState('');
-
-  const toast = useRef(null);
-
-  const [lazyState, setLazyState] = useState({
-    first: 0,
-    rows: 10,
-    page: 0,
-    sortField: 'createdAt',
-    sortOrder: -1,
-    filters: {
-      global: { value: null, matchMode: 'contains' },
-      role: { value: null, matchMode: 'equals' }
-    }
-  });
-
+  
+  // Form states
   const [addForm, setAddForm] = useState({
     username: "",
     email: "",
     name: "",
+    mobile: "",
     password: "",
     role: "",
   });
@@ -86,108 +70,111 @@ export default function UsersPage() {
     username: "",
     email: "",
     name: "",
+    mobile: "",
     role: "",
     password: "",
   });
 
-  const fetchUsers = async (state, isInitialLoad = false) => {
-    if (isInitialLoad) {
-      setPageLoading(true);
-    } else {
-      setLoading(true);
-    }
-    setError(null);
+  // Lazy loading state
+  const [lazyState, setLazyState] = useState({
+    first: 0,
+    rows: 10,
+    page: 0,
+    sortField: 'createdAt',
+    sortOrder: -1,
+    filters: {}
+  });
 
+  const toast = useRef(null);
+
+  // Fixed fetchUsers function with proper error handling
+  const fetchUsers = useCallback(async (state = lazyState, isInitial = false) => {
     try {
+      if (isInitial) {
+        setPageLoading(true);
+      } else {
+        setLoading(true);
+      }
+      setError(null);
+
       const params = new URLSearchParams({
         skip: state.first.toString(),
         limit: state.rows.toString(),
-        sortField: state.sortField || "created_at",
-        sortOrder: state.sortOrder?.toString() || "-1",
+        sortField: state.sortField || 'createdAt',
+        sortOrder: state.sortOrder.toString(),
+        filters: JSON.stringify(state.filters || {})
       });
 
-      // Add filters
-      const filters = {};
-      
-      // Combine name and username search into one search term
-      const searchTerms = [];
-      if (nameSearch.trim()) searchTerms.push(nameSearch.trim());
-      if (usernameSearch.trim()) searchTerms.push(usernameSearch.trim());
-      
-      if (searchTerms.length > 0) {
-        filters.search = searchTerms.join(" ");
-      }
-      
-      if (roleFilter) {
-        filters.role = roleFilter;
-      }
-
-      if (Object.keys(filters).length > 0) {
-        params.append('filters', JSON.stringify(filters));
-      }
-
       const response = await fetch(`/api/v1/users?${params}`);
+      
       if (!response.ok) {
         throw new Error(`HTTP error! status: ${response.status}`);
       }
-
+      
       const data = await response.json();
-      if (!data.success) {
-        throw new Error(data.error || "Failed to fetch users");
+      
+      if (data.success) {
+        // Ensure users is always an array
+        const usersArray = Array.isArray(data.users) ? data.users : [];
+        setUsers(usersArray);
+        setTotalRecords(data.totalCount || 0);
+      } else {
+        throw new Error(data.error || 'Failed to fetch users');
       }
-
-      setUsers(data.users || []);
-      setTotalRecords(data.totalCount || 0);
     } catch (error) {
+      console.error('Error fetching users:', error);
       setError(error.message);
+      setUsers([]); // Set empty array on error
+      setTotalRecords(0);
+      
       toast.current?.show({
         severity: "error",
         summary: "Error",
-        detail: error.message || "Failed to load users",
-        life: 3000,
+        detail: `Failed to load users: ${error.message}`,
+        life: 5000,
       });
     } finally {
       setLoading(false);
       setPageLoading(false);
     }
-  };
+  }, [lazyState]);
 
+  // Initial load
   useEffect(() => {
     fetchUsers(lazyState, true);
   }, []);
 
-  useEffect(() => {
-    if (!pageLoading) {
-      const timeoutId = setTimeout(() => {
-        fetchUsers(lazyState, false);
-      }, 500); // Debounce search
-      
-      return () => clearTimeout(timeoutId);
-    }
-  }, [lazyState, nameSearch, usernameSearch, roleFilter]);
-
+  // Handle lazy loading events
   const onPageChange = (event) => {
-    setLazyState((prev) => ({
-      ...prev,
+    const newState = {
+      ...lazyState,
       first: event.first,
       rows: event.rows,
       page: event.page
-    }));
+    };
+    setLazyState(newState);
+    fetchUsers(newState, false);
   };
 
   const onSort = (event) => {
-    setLazyState((prev) => ({
-      ...prev,
+    const newState = {
+      ...lazyState,
       sortField: event.sortField,
       sortOrder: event.sortOrder,
-    }));
+    };
+    setLazyState(newState);
+    fetchUsers(newState, false);
   };
 
   const onFilter = (event) => {
-    setLazyState((prev) => ({
-      ...prev,
+    const newState = {
+      ...lazyState,
+      first: 0,
+      page: 0,
       filters: event.filters
-    }));
+    };
+    setLazyState(newState);
+    fetchUsers(newState, false);
   };
 
   const statusBodyTemplate = (rowData) => (
@@ -225,55 +212,105 @@ export default function UsersPage() {
   };
 
   const actionBodyTemplate = (rowData) => {
-    // Check if user can be edited (not PROVIDER, CUSTOMER)
-    const canEdit = !['PROVIDER', 'CUSTOMER'].includes(rowData.role);
+    // Check if user can be edited/deleted (not PROVIDER, CUSTOMER, USER)
+    const canEdit = !['PROVIDER', 'CUSTOMER', 'USER'].includes(rowData.role);
     
     return (
-      <div className="flex gap-2 justify-center">
-        {canEdit && (
-          <Button
-            icon="pi pi-pencil"
-            rounded
-            severity="secondary"
-            className="p-button-sm w-6 h-6 sm:w-8 sm:h-8"
-            onClick={() => openEditSidebar(rowData)}
-            tooltip="Edit"
-          />
-        )}
-        {!canEdit && (
-          <Button
-            icon="pi pi-eye"
-            rounded
-            severity="info"
-            className="p-button-sm w-6 h-6 sm:w-8 sm:h-8"
-            onClick={() => viewUser(rowData)}
-            tooltip="View Only"
-          />
-        )}
-        {isAdmin() && canEdit && (
-          <Button
-            icon="pi pi-trash"
-            rounded
-            severity="danger"
-            className="p-button-sm w-6 h-6 sm:w-8 sm:h-8"
-            onClick={() => confirmDelete(rowData)}
-            tooltip="Delete"
-          />
+      <div className="flex gap-2 justify-center items-center">
+        {canEdit ? (
+          <>
+            <Button
+              icon="pi pi-pencil"
+              rounded
+              severity="secondary"
+              className="p-button-sm w-6 h-6 sm:w-8 sm:h-8"
+              onClick={() => openEditSidebar(rowData)}
+              tooltip="Edit"
+            />
+            {isAdmin() && (
+              <Button
+                icon="pi pi-trash"
+                rounded
+                severity="danger"
+                className="p-button-sm w-6 h-6 sm:w-8 sm:h-8"
+                onClick={() => confirmDelete(rowData)}
+                tooltip="Delete"
+              />
+            )}
+          </>
+        ) : (
+          <div className="flex items-center gap-2">
+            <Button
+              icon="pi pi-eye"
+              rounded
+              severity="info"
+              className="p-button-sm w-6 h-6 sm:w-8 sm:h-8"
+              onClick={() => viewUser(rowData)}
+              tooltip="View Only"
+            />
+            <span className="text-xs text-gray-500">
+              {rowData.role === 'USER' ? 'Basic User' : 'Managed Separately'}
+            </span>
+          </div>
         )}
       </div>
     );
   };
 
   const viewUser = (user) => {
+    let userType, managementInfo;
+    
+    switch(user.role) {
+      case 'PROVIDER':
+        userType = 'Provider/Hoster';
+        managementInfo = 'They are managed separately in the providers section.';
+        break;
+      case 'CUSTOMER':
+        userType = 'Customer';
+        managementInfo = 'They are managed separately in the customers section.';
+        break;
+      case 'USER':
+        userType = 'Basic User';
+        managementInfo = 'Basic users have limited functionality and cannot be modified from this admin panel.';
+        break;
+      default:
+        userType = user.role;
+        managementInfo = 'This user type has restricted access.';
+    }
+    
     toast.current?.show({
       severity: "info",
       summary: "Info",
-      detail: `${user.role}s are managed separately. Please use the dedicated ${user.role.toLowerCase()} management page.`,
-      life: 4000,
+      detail: `${userType}s cannot be edited or deleted from this page. ${managementInfo}`,
+      life: 5000,
     });
   };
 
   const confirmDelete = (user) => {
+    // Prevent deletion of PROVIDER, CUSTOMER, and USER
+    if (['PROVIDER', 'CUSTOMER', 'USER'].includes(user.role)) {
+      let message;
+      switch(user.role) {
+        case 'PROVIDER':
+          message = 'Providers cannot be deleted from this page. They are managed separately in the providers section.';
+          break;
+        case 'CUSTOMER':
+          message = 'Customers cannot be deleted from this page. They are managed separately in the customers section.';
+          break;
+        case 'USER':
+          message = 'Basic users cannot be deleted from this admin panel for security reasons.';
+          break;
+      }
+      
+      toast.current?.show({
+        severity: "warn",
+        summary: "Warning",
+        detail: message,
+        life: 4000,
+      });
+      return;
+    }
+
     confirmDialog({
       message: `Are you sure you want to delete ${user.name}?`,
       header: "Confirm Deletion",
@@ -289,6 +326,7 @@ export default function UsersPage() {
       username: "",
       email: "",
       name: "",
+      mobile: "",
       password: "",
       role: "",
     });
@@ -298,11 +336,24 @@ export default function UsersPage() {
 
   const openEditSidebar = (user) => {
     // Check if user role can be edited
-    if (['PROVIDER', 'CUSTOMER'].includes(user.role)) {
+    if (['PROVIDER', 'CUSTOMER', 'USER'].includes(user.role)) {
+      let message;
+      switch(user.role) {
+        case 'PROVIDER':
+          message = 'Providers cannot be edited from this page. Please use the dedicated provider management page.';
+          break;
+        case 'CUSTOMER':
+          message = 'Customers cannot be edited from this page. Please use the dedicated customer management page.';
+          break;
+        case 'USER':
+          message = 'Basic users cannot be edited from this admin panel for security reasons.';
+          break;
+      }
+      
       toast.current?.show({
         severity: "warn",
         summary: "Warning",
-        detail: `${user.role}s cannot be edited from this page. Please use the dedicated ${user.role.toLowerCase()} management page.`,
+        detail: message,
         life: 4000,
       });
       return;
@@ -313,6 +364,7 @@ export default function UsersPage() {
       username: user.username,
       email: user.email,
       name: user.name,
+      mobile: user.mobile || "",
       role: user.role,
       password: "",
     });
@@ -330,8 +382,20 @@ export default function UsersPage() {
     if (!form.role) errors.role = "Role is required";
     
     // Check if trying to add restricted roles
-    if (['PROVIDER', 'CUSTOMER'].includes(form.role)) {
-      errors.role = `${form.role}s cannot be added from this page. Please use the dedicated registration process.`;
+    if (['PROVIDER', 'CUSTOMER', 'USER'].includes(form.role)) {
+      let message;
+      switch(form.role) {
+        case 'PROVIDER':
+          message = 'Providers cannot be added from this page. Please use the dedicated provider registration process.';
+          break;
+        case 'CUSTOMER':
+          message = 'Customers cannot be added from this page. Please use the dedicated customer registration process.';
+          break;
+        case 'USER':
+          message = 'Basic users cannot be created from this admin panel. They are created through the standard registration process.';
+          break;
+      }
+      errors.role = message;
     }
     
     return errors;
@@ -363,6 +427,7 @@ export default function UsersPage() {
           username: "",
           email: "",
           name: "",
+          mobile: "",
           password: "",
           role: "",
         });
@@ -413,6 +478,7 @@ export default function UsersPage() {
           username: "",
           email: "",
           name: "",
+          mobile: "",
           role: "",
           password: "",
         });
@@ -590,6 +656,11 @@ export default function UsersPage() {
             sortable 
           />
           <Column 
+            field="mobile" 
+            header="Mobile" 
+            sortable 
+          />
+          <Column 
             field="role" 
             header="Role" 
             body={roleBodyTemplate} 
@@ -668,6 +739,23 @@ export default function UsersPage() {
               </label>
             </FloatLabel>
             {formErrors.email && <span className="text-red-500 text-xs mt-1">{formErrors.email}</span>}
+          </div>
+          <div className="mt-2">
+            <FloatLabel>
+              <InputText
+                id="add-mobile"
+                name="mobile"
+                value={addForm.mobile}
+                className={`w-full p-3 text-sm sm:text-base rounded-lg border ${
+                  formErrors.mobile ? "border-red-500" : "border-gray-300"
+                }`}
+                onChange={(e) => setAddForm({ ...addForm, mobile: e.target.value })}
+              />
+              <label htmlFor="add-mobile" className="text-sm text-gray-600">
+                Mobile Number
+              </label>
+            </FloatLabel>
+            {formErrors.mobile && <span className="text-red-500 text-xs mt-1">{formErrors.mobile}</span>}
           </div>
           <div className="mt-2">
             <FloatLabel>
@@ -782,6 +870,23 @@ export default function UsersPage() {
               </label>
             </FloatLabel>
             {formErrors.email && <span className="text-red-500 text-xs mt-1">{formErrors.email}</span>}
+          </div>
+          <div className="mt-2">
+            <FloatLabel>
+              <InputText
+                id="edit-mobile"
+                name="mobile"
+                value={editForm.mobile}
+                className={`w-full p-3 text-sm sm:text-base rounded-lg border ${
+                  formErrors.mobile ? "border-red-500" : "border-gray-300"
+                }`}
+                onChange={(e) => setEditForm({ ...editForm, mobile: e.target.value })}
+              />
+              <label htmlFor="edit-mobile" className="text-sm text-gray-600">
+                Mobile Number
+              </label>
+            </FloatLabel>
+            {formErrors.mobile && <span className="text-red-500 text-xs mt-1">{formErrors.mobile}</span>}
           </div>
           <div className="mt-2">
             <FloatLabel>

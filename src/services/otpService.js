@@ -1,5 +1,5 @@
 
-import { prisma } from "../../../../lib/prisma";
+import { prisma } from "../lib/prisma";
 
 export class UserDAL {
   static async findMany(options = {}) {
@@ -134,46 +134,52 @@ export class UserDAL {
   }
 }
 
-import { prisma } from '../lib/prisma';
-
 export class OtpService {
   static async generateOTP() {
     return Math.floor(100000 + Math.random() * 900000).toString();
   }
 
-  static async saveOTP(mobile, email, otp, type) {
+  static async createOTP(data) {
     try {
-      const expiresAt = new Date(Date.now() + 10 * 60 * 1000); // 10 minutes from now
-      
+      const { mobile, email, type } = data;
+      const otp = await this.generateOTP();
+      const expiresAt = new Date(Date.now() + 10 * 60 * 1000); // 10 minutes
+
       return await prisma.otp.create({
         data: {
           mobile: type === 'mobile' ? mobile : null,
           email: type === 'email' ? email : null,
           otp,
           type,
-          expires_at: expiresAt
-        }
+          expires_at: expiresAt,
+        },
       });
     } catch (error) {
-      throw new Error(`Failed to save OTP: ${error.message}`);
+      throw new Error(`Failed to create OTP: ${error.message}`);
     }
   }
 
-  static async verifyOTP(identifier, otp, type) {
+  static async verifyOTP(data) {
     try {
-      const where = type === 'mobile' 
-        ? { mobile: identifier, type: 'mobile' }
-        : { email: identifier, type: 'email' };
+      const { mobile, email, otp, type } = data;
+      
+      const whereClause = {
+        otp,
+        type,
+        is_used: false,
+        expires_at: {
+          gte: new Date(),
+        },
+      };
+
+      if (type === 'mobile') {
+        whereClause.mobile = mobile;
+      } else if (type === 'email') {
+        whereClause.email = email;
+      }
 
       const otpRecord = await prisma.otp.findFirst({
-        where: {
-          ...where,
-          otp,
-          is_used: false,
-          expires_at: {
-            gt: new Date()
-          }
-        }
+        where: whereClause,
       });
 
       if (!otpRecord) {
@@ -185,8 +191,8 @@ export class OtpService {
         where: { id: otpRecord.id },
         data: {
           is_used: true,
-          verified_at: new Date()
-        }
+          verified_at: new Date(),
+        },
       });
 
       return { success: true, message: 'OTP verified successfully' };
@@ -195,17 +201,89 @@ export class OtpService {
     }
   }
 
+  static async resendOTP(data) {
+    try {
+      const { mobile, email, type } = data;
+      
+      // Mark previous OTPs as used
+      const whereClause = {
+        type,
+        is_used: false,
+      };
+
+      if (type === 'mobile') {
+        whereClause.mobile = mobile;
+      } else if (type === 'email') {
+        whereClause.email = email;
+      }
+
+      await prisma.otp.updateMany({
+        where: whereClause,
+        data: { is_used: true },
+      });
+
+      // Create new OTP
+      return await this.createOTP(data);
+    } catch (error) {
+      throw new Error(`Failed to resend OTP: ${error.message}`);
+    }
+  }
+
   static async cleanupExpiredOTPs() {
     try {
-      await prisma.otp.deleteMany({
+      const result = await prisma.otp.deleteMany({
         where: {
           expires_at: {
-            lt: new Date()
-          }
-        }
+            lt: new Date(),
+          },
+        },
       });
+      return result;
     } catch (error) {
-      console.error('Failed to cleanup expired OTPs:', error);
+      throw new Error(`Failed to cleanup expired OTPs: ${error.message}`);
+    }
+  }
+
+  static async sendMobileOTP(mobile) {
+    try {
+      const otpData = await this.createOTP({
+        mobile,
+        type: 'mobile',
+      });
+
+      // Here you would integrate with SMS service (Twilio, AWS SNS, etc.)
+      console.log(`SMS OTP ${otpData.otp} sent to ${mobile}`);
+      
+      return {
+        success: true,
+        message: 'OTP sent successfully',
+        otpId: otpData.id,
+      };
+    } catch (error) {
+      throw new Error(`Failed to send mobile OTP: ${error.message}`);
+    }
+  }
+
+  static async sendEmailOTP(email) {
+    try {
+      const otpData = await this.createOTP({
+        email,
+        type: 'email',
+      });
+
+      // Here you would integrate with email service (SendGrid, AWS SES, etc.)
+      console.log(`Email OTP ${otpData.otp} sent to ${email}`);
+      
+      return {
+        success: true,
+        message: 'OTP sent successfully',
+        otpId: otpData.id,
+      };
+    } catch (error) {
+      throw new Error(`Failed to send email OTP: ${error.message}`);
     }
   }
 }
+
+// For backward compatibility
+export const otpService = OtpService;

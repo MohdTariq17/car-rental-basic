@@ -1,139 +1,112 @@
-import { prisma } from ../../../../../lib/prisma;
+import { prisma } from '../../../../../lib/prisma';
 import { NextResponse } from 'next/server';
 
-
-import { prisma } from "../../../../lib/prisma";
-
-// GET /api/v1/variants/[id] - Fetch single variant
 export async function GET(request, { params }) {
   try {
     const { id } = await params;
-
+    
     const variant = await prisma.variant.findUnique({
       where: { id },
       include: {
         model: {
-          select: {
-            id: true,
-            name: true,
+          include: {
             brand: {
               select: {
                 id: true,
-                name: true,
-                logo: true
+                name: true
               }
             }
           }
         }
       }
     });
-
+    
     if (!variant) {
-      return NextResponse.json(
-        { message: "Variant not found", statusCode: 404 },
-        { status: 404 }
-      );
+      return NextResponse.json({ 
+        success: false, 
+        error: 'Variant not found' 
+      }, { status: 404 });
     }
-
+    
     return NextResponse.json({
-      message: "Variant fetched successfully",
-      variant: variant,
-      statusCode: 200
+      success: true,
+      data: variant
     });
   } catch (error) {
     console.error('Error fetching variant:', error);
-    return NextResponse.json(
-      { message: "Failed to fetch variant", error: error.message, statusCode: 500 },
-      { status: 500 }
-    );
-  } finally {
-    await prisma.$disconnect();
+    return NextResponse.json({ 
+      success: false, 
+      error: 'Failed to fetch variant' 
+    }, { status: 500 });
   }
 }
 
-// PUT /api/v1/variants/[id] - Update variant
 export async function PUT(request, { params }) {
   try {
     const { id } = await params;
-    const body = await request.json();
-    const { name, modelId, fuelType, transmission, seatingCapacity, active } = body;
-
-    const updateData = {};
-    if (name !== undefined) updateData.name = name;
-    if (modelId !== undefined) updateData.modelId = modelId;
-    if (fuelType !== undefined) updateData.fuelType = fuelType;
-    if (transmission !== undefined) updateData.transmission = transmission;
-    if (seatingCapacity !== undefined) updateData.seatingCapacity = seatingCapacity ? parseInt(seatingCapacity) : null;
-    if (active !== undefined) updateData.active = active;
-
+    const data = await request.json();
+    const { name, modelId, fuelType, transmission, seatingCapacity, active } = data;
+    
     const variant = await prisma.variant.update({
       where: { id },
-      data: updateData,
+      data: {
+        ...(name && { name: name.trim() }),
+        ...(modelId && { modelId }),
+        ...(fuelType !== undefined && { fuelType: fuelType?.trim() || null }),
+        ...(transmission !== undefined && { transmission: transmission?.trim() || null }),
+        ...(seatingCapacity !== undefined && { seatingCapacity: seatingCapacity ? parseInt(seatingCapacity) : null }),
+        ...(active !== undefined && { active })
+      },
       include: {
         model: {
-          select: {
-            id: true,
-            name: true,
+          include: {
             brand: {
               select: {
                 id: true,
-                name: true,
-                logo: true
+                name: true
               }
             }
           }
         }
       }
     });
-
+    
     return NextResponse.json({
-      message: "Variant updated successfully",
-      variant: variant,
-      statusCode: 200
+      success: true,
+      data: variant
     });
   } catch (error) {
     console.error('Error updating variant:', error);
-    if (error.code === 'P2025') {
-      return NextResponse.json(
-        { message: "Variant not found", statusCode: 404 },
-        { status: 404 }
-      );
-    }
-    return NextResponse.json(
-      { message: "Failed to update variant", error: error.message, statusCode: 500 },
-      { status: 500 }
-    );
-  } finally {
-    await prisma.$disconnect();
+    return NextResponse.json({ 
+      success: false, 
+      error: 'Failed to update variant' 
+    }, { status: 500 });
   }
 }
 
-// DELETE /api/v1/variants/[id] - Delete variant
 export async function DELETE(request, { params }) {
   try {
     const { id } = await params;
-
+    
     await prisma.variant.delete({
       where: { id }
     });
-
+    
     return NextResponse.json({
-      message: "Variant deleted successfully",
-      statusCode: 200
+      success: true,
+      message: "Variant deleted successfully"
     });
   } catch (error) {
     console.error('Error deleting variant:', error);
     if (error.code === 'P2025') {
-      return NextResponse.json(
-        { message: "Variant not found", statusCode: 404 },
-        { status: 404 }
-      );
+      return NextResponse.json({ 
+        success: false, 
+        error: 'Variant not found' 
+      }, { status: 404 });
     }
-    return NextResponse.json(
-      { message: "Failed to delete variant", error: error.message, statusCode: 500 },
-      { status: 500 }
-    );
-  } finally {
-    await prisma.$disconnect();
+    return NextResponse.json({ 
+      success: false, 
+      error: 'Failed to delete variant' 
+    }, { status: 500 });
   }
 }

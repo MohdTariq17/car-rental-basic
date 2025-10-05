@@ -1,50 +1,30 @@
-import { prisma } from '../../../../../lib/prisma';
+import { prisma } from '../../../../lib/prisma';
 import { NextResponse } from 'next/server';
 
 export async function GET(request) {
   try {
     const { searchParams } = new URL(request.url);
     const categoryId = searchParams.get('categoryId');
-    const active = searchParams.get('active');
     
-    let whereClause = {};
+    const whereClause = categoryId ? { categoryId } : {};
     
-    if (categoryId) {
-      whereClause.categoryId = categoryId;
-    }
-    
-    if (active !== null && active !== undefined) {
-      whereClause.active = active === 'true';
-    }
-
     const items = await prisma.checklistItem.findMany({
       where: whereClause,
       include: {
         category: {
           select: {
             id: true,
-            name: true,
-            active: true
+            name: true
           }
         }
       },
-      orderBy: {
-        createdAt: 'desc'
-      }
-    });
-
-    // Parse options field if it exists
-    const formattedItems = items.map(item => ({
-      ...item,
-      options: item.options ? JSON.parse(item.options) : null
-    }));
-
-    return NextResponse.json({ 
-      success: true, 
-      data: formattedItems,
-      message: 'Checklist items fetched successfully' 
+      orderBy: { name: 'asc' }
     });
     
+    return NextResponse.json({
+      success: true,
+      data: items
+    });
   } catch (error) {
     console.error('Error fetching checklist items:', error);
     return NextResponse.json({ 
@@ -56,117 +36,38 @@ export async function GET(request) {
 
 export async function POST(request) {
   try {
-    const body = await request.json();
-    const { 
-      name, 
-      categoryId, 
-      description, 
-      checkType = 'BOOLEAN', 
-      required = false, 
-      active = true,
-      options = null
-    } = body;
+    const data = await request.json();
+    const { name, categoryId, description, checkType, required } = data;
     
-    // Validation
-    if (!name || !name.trim()) {
+    if (!name || !categoryId) {
       return NextResponse.json({ 
         success: false, 
-        error: 'Item name is required' 
+        error: 'Name and categoryId are required' 
       }, { status: 400 });
     }
     
-    if (!categoryId) {
-      return NextResponse.json({ 
-        success: false, 
-        error: 'Category ID is required' 
-      }, { status: 400 });
-    }
-    
-    // Verify category exists and is active
-    const category = await prisma.checklistCategory.findUnique({
-      where: { id: categoryId }
-    });
-    
-    if (!category) {
-      return NextResponse.json({ 
-        success: false, 
-        error: 'Category not found' 
-      }, { status: 404 });
-    }
-    
-    if (!category.active) {
-      return NextResponse.json({ 
-        success: false, 
-        error: 'Cannot add items to inactive category' 
-      }, { status: 400 });
-    }
-    
-    // Check if item with same name exists in the same category
-    const existingItem = await prisma.checklistItem.findFirst({
-      where: { 
-        name: name.trim(),
-        categoryId: categoryId
-      }
-    });
-    
-    if (existingItem) {
-      return NextResponse.json({ 
-        success: false, 
-        error: 'Item with this name already exists in this category' 
-      }, { status: 409 });
-    }
-    
-    // Validate checkType
-    const validCheckTypes = ['BOOLEAN', 'TEXT', 'NUMBER', 'DROPDOWN', 'RATING'];
-    if (!validCheckTypes.includes(checkType)) {
-      return NextResponse.json({ 
-        success: false, 
-        error: 'Invalid check type. Must be one of: ' + validCheckTypes.join(', ') 
-      }, { status: 400 });
-    }
-    
-    // Validate options for dropdown type
-    if (checkType === 'DROPDOWN' && (!options || !Array.isArray(options) || options.length === 0)) {
-      return NextResponse.json({ 
-        success: false, 
-        error: 'Options are required for dropdown type items' 
-      }, { status: 400 });
-    }
-    
-    // Create new checklist item
-    const newItem = await prisma.checklistItem.create({
+    const item = await prisma.checklistItem.create({
       data: {
         name: name.trim(),
         categoryId,
         description: description?.trim() || null,
-        checkType,
-        required: Boolean(required),
-        active: Boolean(active),
-        options: options ? JSON.stringify(options) : null
+        checkType: checkType || 'boolean',
+        required: required || false
       },
       include: {
         category: {
           select: {
             id: true,
-            name: true,
-            active: true
+            name: true
           }
         }
       }
     });
     
-    // Parse options for response
-    const formattedItem = {
-      ...newItem,
-      options: newItem.options ? JSON.parse(newItem.options) : null
-    };
-    
-    return NextResponse.json({ 
-      success: true, 
-      data: formattedItem,
-      message: 'Checklist item created successfully' 
+    return NextResponse.json({
+      success: true,
+      data: item
     }, { status: 201 });
-    
   } catch (error) {
     console.error('Error creating checklist item:', error);
     return NextResponse.json({ 

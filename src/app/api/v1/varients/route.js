@@ -1,121 +1,86 @@
-import { prisma } from ../../../../../lib/prisma;
+import { prisma } from '../../../../lib/prisma';
 import { NextResponse } from 'next/server';
 
-
-import { prisma } from "../../../../lib/prisma";
-
-// GET /api/v1/variants - Fetch all variants
 export async function GET(request) {
   try {
     const { searchParams } = new URL(request.url);
     const modelId = searchParams.get('modelId');
-    const active = searchParams.get('active');
-
-    // Build where clause
-    const where = {};
-    if (modelId) where.modelId = modelId;
-    if (active !== null && active !== undefined) {
-      where.active = active === 'true';
-    }
-
+    
+    const whereClause = modelId ? { modelId } : {};
+    
     const variants = await prisma.variant.findMany({
-      where,
+      where: whereClause,
       include: {
         model: {
-          select: {
-            id: true,
-            name: true,
+          include: {
             brand: {
               select: {
                 id: true,
-                name: true,
-                logo: true
+                name: true
               }
             }
           }
         }
       },
-      orderBy: [
-        { model: { name: 'asc' } },
-        { name: 'asc' }
-      ]
+      orderBy: { name: 'asc' }
     });
-
+    
     return NextResponse.json({
-      message: "Variants fetched successfully",
-      variants: variants,
-      count: variants.length,
-      statusCode: 200
+      success: true,
+      data: variants
     });
   } catch (error) {
     console.error('Error fetching variants:', error);
-    return NextResponse.json(
-      { message: "Failed to fetch variants", error: error.message, statusCode: 500 },
-      { status: 500 }
-    );
-  } finally {
-    await prisma.$disconnect();
+    return NextResponse.json({ 
+      success: false, 
+      error: 'Failed to fetch variants' 
+    }, { status: 500 });
   }
 }
 
-// POST /api/v1/variants - Create new variant
 export async function POST(request) {
   try {
-    const body = await request.json();
-    const { 
-      name, 
-      modelId, 
-      fuelType, 
-      transmission, 
-      seatingCapacity, 
-      active = true 
-    } = body;
-
+    const data = await request.json();
+    const { name, modelId, fuelType, transmission, seatingCapacity } = data;
+    
     if (!name || !modelId) {
-      return NextResponse.json(
-        { message: "Name and modelId are required", statusCode: 400 },
-        { status: 400 }
-      );
+      return NextResponse.json({ 
+        success: false, 
+        error: 'Name and modelId are required' 
+      }, { status: 400 });
     }
-
+    
     const variant = await prisma.variant.create({
       data: {
-        name,
+        name: name.trim(),
         modelId,
-        fuelType,
-        transmission,
-        seatingCapacity: seatingCapacity ? parseInt(seatingCapacity) : null,
-        active
+        fuelType: fuelType?.trim() || null,
+        transmission: transmission?.trim() || null,
+        seatingCapacity: seatingCapacity ? parseInt(seatingCapacity) : null
       },
       include: {
         model: {
-          select: {
-            id: true,
-            name: true,
+          include: {
             brand: {
               select: {
                 id: true,
-                name: true,
-                logo: true
+                name: true
               }
             }
           }
         }
       }
     });
-
+    
     return NextResponse.json({
-      message: "Variant created successfully",
-      variant: variant,
-      statusCode: 201
+      success: true,
+      data: variant
     }, { status: 201 });
   } catch (error) {
     console.error('Error creating variant:', error);
-    return NextResponse.json(
-      { message: "Failed to create variant", error: error.message, statusCode: 500 },
-      { status: 500 }
-    );
-  } finally {
-    await prisma.$disconnect();
+    return NextResponse.json({ 
+      success: false, 
+      error: 'Failed to create variant' 
+    }, { status: 500 });
   }
 }

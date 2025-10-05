@@ -1,68 +1,82 @@
-import { prisma } from ../../../../../lib/prisma;
+import { prisma } from '../../../../lib/prisma';
 import { NextResponse } from 'next/server';
 
-import { prisma } from "../../../../lib/prisma";
-
-// GET - Fetch all states
-export async function GET() {
+export async function GET(request) {
   try {
-    const states = await prisma.state.findMany({
-      where: { active: true },
-      orderBy: { name: 'asc' }
-    });
-
+    const { searchParams } = new URL(request.url);
+    const page = parseInt(searchParams.get('page')) || 1;
+    const limit = parseInt(searchParams.get('limit')) || 10;
+    const search = searchParams.get('search');
+    
+    const skip = (page - 1) * limit;
+    
+    const whereClause = search ? {
+      OR: [
+        { name: { contains: search, mode: 'insensitive' } },
+        { code: { contains: search, mode: 'insensitive' } }
+      ]
+    } : {};
+    
+    const [states, total] = await Promise.all([
+      prisma.state.findMany({
+        where: whereClause,
+        skip,
+        take: limit,
+        orderBy: { name: 'asc' },
+        include: {
+          _count: {
+            select: {
+              cities: true
+            }
+          }
+        }
+      }),
+      prisma.state.count({ where: whereClause })
+    ]);
+    
     return NextResponse.json({
       success: true,
-      data: states
+      data: {
+        states,
+        pagination: {
+          page,
+          limit,
+          total,
+          pages: Math.ceil(total / limit)
+        }
+      }
     });
   } catch (error) {
     console.error('Error fetching states:', error);
-    return NextResponse.json({
-      success: false,
-      error: 'Failed to fetch states'
+    return NextResponse.json({ 
+      success: false, 
+      error: 'Failed to fetch states' 
     }, { status: 500 });
-  } finally {
-    await prisma.$disconnect();
   }
 }
 
-// POST - Create a new state
 export async function POST(request) {
   try {
-    const body = await request.json();
-    const { name, code, active = true } = body;
+    const data = await request.json();
+    const { name, code } = data;
     
     if (!name || !code) {
       return NextResponse.json({ 
         success: false, 
-        error: 'State name and code are required' 
+        error: 'Name and code are required' 
       }, { status: 400 });
     }
-
-    // Check if state with same code already exists
-    const existingState = await prisma.state.findUnique({
-      where: { code: code.toUpperCase() }
-    });
-
-    if (existingState) {
-      return NextResponse.json({ 
-        success: false, 
-        error: 'State with this code already exists' 
-      }, { status: 409 });
-    }
-
-    const newState = await prisma.state.create({
+    
+    const state = await prisma.state.create({
       data: {
         name: name.trim(),
-        code: code.toUpperCase().trim(),
-        active
+        code: code.trim().toUpperCase()
       }
     });
     
-    return NextResponse.json({ 
-      success: true, 
-      message: 'State created successfully',
-      data: newState 
+    return NextResponse.json({
+      success: true,
+      data: state
     }, { status: 201 });
   } catch (error) {
     console.error('Error creating state:', error);
@@ -70,8 +84,6 @@ export async function POST(request) {
       success: false, 
       error: 'Failed to create state' 
     }, { status: 500 });
-  } finally {
-    await prisma.$disconnect();
   }
 }
 

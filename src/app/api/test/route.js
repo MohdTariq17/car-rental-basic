@@ -1,9 +1,9 @@
+import { prisma } from ../../../../../lib/prisma;
 import { NextResponse } from 'next/server';
-import { PrismaClient } from '../../../../generated/client';
 
 export async function GET() {
   try {
-    const prisma = new PrismaClient();
+    import { prisma } from "../../../../lib/prisma";
     
     // Test database connection
     await prisma.$connect();

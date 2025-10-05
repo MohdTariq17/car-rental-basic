@@ -1,7 +1,7 @@
+import { prisma } from ../../../../../lib/prisma;
 import { NextResponse } from 'next/server';
-import { PrismaClient } from '../../../../../generated/client';
 
-const prisma = new PrismaClient();
+import { prisma } from "../../../../lib/prisma";
 
 // GET - Fetch all states
 export async function GET() {

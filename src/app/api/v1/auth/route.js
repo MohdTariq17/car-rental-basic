@@ -1,232 +1,52 @@
-import { NextResponse } from 'next/server';
-import { PrismaClient } from '@prisma/client';
+import { prisma } from '../../../../lib/prisma';
 import bcrypt from 'bcryptjs';
-import { generateToken } from '../../../util/jwt';
+import { SignJWT } from 'jose';
 
-// Initialize Prisma client with better error handling for Vercel
-let prisma;
-
-if (process.env.NODE_ENV === 'production') {
-  prisma = new PrismaClient();
-} else {
-  if (!global.prisma) {
-    global.prisma = new PrismaClient({
-      log: ['query', 'error', 'warn'],
-    });
-  }
-  prisma = global.prisma;
-}
+const secret = new TextEncoder().encode(process.env.JWT_SECRET || 'your-secret-key');
 
 export async function POST(request) {
   try {
-    console.log('Auth POST request received');
-    console.log('Environment:', process.env.NODE_ENV);
-    console.log('Database URL exists:', !!process.env.DB_URL);
-    
-    // Check if Prisma is initialized
-    if (!prisma) {
-      console.error('Prisma client not initialized');
-      return NextResponse.json({
-        message: "Database connection error",
-        statusCode: 500,
-        error: "Database client initialization failed"
-      }, {
-        status: 500
-      });
+    const { email, password } = await request.json();
+
+    if (!email || !password) {
+      return Response.json({ error: 'Email and password are required' }, { status: 400 });
     }
 
-    let body;
-    try {
-      body = await request.json();
-    } catch (parseError) {
-      console.error('Failed to parse request body:', parseError);
-      return NextResponse.json({
-        message: "Invalid request body",
-        statusCode: 400,
-        error: "Request body must be valid JSON"
-      }, {
-        status: 400
-      });
-    }
-
-    console.log('Request body parsed successfully');
-    // Update the user lookup logic in the POST function
-    const { email, username, password } = body;
-
-    // Validate input - accept either email or username
-    if ((!email && !username) || !password) {
-      console.log('Missing email/username or password');
-      return NextResponse.json({
-        message: "Email/username and password are required",
-        statusCode: 400,
-        error: "Missing required fields"
-      }, {
-        status: 400
-      });
-    }
-
-    // Determine search criteria based on what was provided
-    let searchCriteria = {};
-    if (email) {
-      searchCriteria.email = email.toLowerCase().trim();
-      console.log('Searching for user with email:', email);
-    } else if (username) {
-      searchCriteria.username = username.trim();
-      console.log('Searching for user with username:', username);
-    }
-
-    // Find user with updated search criteria
-    let user;
-    try {
-      user = await prisma.user.findUnique({
-        where: searchCriteria
-      });
-      console.log('User query completed, user found:', !!user);
-    } catch (dbError) {
-      console.error('Database query error:', dbError);
-      return NextResponse.json({
-        message: "Database query failed",
-        statusCode: 500,
-        error: process.env.NODE_ENV === 'development' ? dbError.message : "Database error"
-      }, {
-        status: 500
-      });
-    }
+    // Find user by email
+    const user = await prisma.user.findUnique({
+      where: { email }
+    });
 
     if (!user) {
-      console.log('User not found');
-      return NextResponse.json({
-        message: "Invalid credentials",
-        statusCode: 401,
-        error: "User not found"
-      }, {
-        status: 401
-      });
+      return Response.json({ error: 'Invalid credentials' }, { status: 401 });
     }
 
-    // Check if user is active
-    if (!user.is_active) {
-      console.log('User account is deactivated');
-      return NextResponse.json({
-        message: "Account is deactivated",
-        statusCode: 403,
-        error: "Account disabled"
-      }, {
-        status: 403
-      });
-    }
-
-    console.log('Verifying password');
-    
     // Verify password
-    let isPasswordValid;
-    try {
-      isPasswordValid = await bcrypt.compare(password, user.password);
-      console.log('Password verification completed, valid:', isPasswordValid);
-    } catch (bcryptError) {
-      console.error('Password verification error:', bcryptError);
-      return NextResponse.json({
-        message: "Authentication error",
-        statusCode: 500,
-        error: "Password verification failed"
-      }, {
-        status: 500
-      });
+    const isValidPassword = await bcrypt.compare(password, user.password);
+    if (!isValidPassword) {
+      return Response.json({ error: 'Invalid credentials' }, { status: 401 });
     }
 
-    if (!isPasswordValid) {
-      console.log('Invalid password');
-      return NextResponse.json({
-        message: "Invalid Password or Email",
-        statusCode: 401,
-        error: "Invalid password"
-      }, {
-        status: 401
-      });
-    }
-
-    console.log('Generating token');
-    
-    // Generate token
-    let token;
-    try {
-      const tokenPayload = {
-        userId: user.id,
-        email: user.email,
-        name: user.name,
-        role: user.role
-      };
-      token = await generateToken(tokenPayload);
-      console.log('Token generated successfully');
-    } catch (tokenError) {
-      console.error('Token generation error:', tokenError);
-      return NextResponse.json({
-        message: "Token generation failed",
-        statusCode: 500,
-        error: "Authentication token creation failed"
-      }, {
-        status: 500
-      });
-    }
+    // Create JWT token
+    const token = await new SignJWT({ 
+      userId: user.id, 
+      email: user.email, 
+      role: user.role 
+    })
+      .setProtectedHeader({ alg: 'HS256' })
+      .setExpirationTime('24h')
+      .sign(secret);
 
     // Remove password from response
     const { password: _, ...userWithoutPassword } = user;
 
-    // Create response
-    const responseData = {
-      message: "Login successful",
-      data: {
-        token,
-        user: userWithoutPassword
-      },
-      statusCode: 200
-    };
-
-    const response = NextResponse.json(responseData, {
-      status: 200,
-      headers: {
-        'Content-Type': 'application/json'
-      }
+    return Response.json({
+      user: userWithoutPassword,
+      token
     });
-
-    // Set HTTP-only cookie
-    response.cookies.set('authToken', token, {
-      httpOnly: true,
-      secure: process.env.NODE_ENV === 'production',
-      sameSite: 'strict',
-      maxAge: 86400, // 24 hours
-      path: '/'
-    });
-
-    console.log('Login successful for user:', email || username);
-    return response;
 
   } catch (error) {
-    console.error('Auth error details:', {
-      message: error.message,
-      stack: error.stack,
-      name: error.name
-    });
-
-    // Ensure we always return a valid JSON response
-    return NextResponse.json({
-      message: "Internal server error",
-      statusCode: 500,
-      error: process.env.NODE_ENV === 'development' ? error.message : "Something went wrong"
-    }, {
-      status: 500,
-      headers: {
-        'Content-Type': 'application/json'
-      }
-    });
-  } finally {
-    // Only disconnect in serverless environments to avoid connection issues
-    if (process.env.NODE_ENV === 'production') {
-      try {
-        await prisma.$disconnect();
-      } catch (disconnectError) {
-        console.error('Prisma disconnect error:', disconnectError);
-      }
-    }
+    console.error('Auth error:', error);
+    return Response.json({ error: 'Authentication failed' }, { status: 500 });
   }
 }

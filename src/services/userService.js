@@ -156,25 +156,23 @@ export class UserService {
   static async createUser(userData) {
     // Hash password if provided
     if (userData.password) {
-      userData.password = await bcrypt.hash(userData.password, 12);
+      userData.password = await bcrypt.hash(userData.password, 10);
     }
+    
     return await UserDAL.create(userData);
   }
 
   static async updateUser(id, userData) {
     // Hash password if provided
     if (userData.password) {
-      userData.password = await bcrypt.hash(userData.password, 12);
+      userData.password = await bcrypt.hash(userData.password, 10);
     }
+    
     return await UserDAL.update(id, userData);
   }
 
   static async deleteUser(id) {
     return await UserDAL.delete(id);
-  }
-
-  static async getProviders(options = {}) {
-    return await UserDAL.findProviders(options);
   }
 
   static async validateUserCredentials(email, password) {
@@ -191,6 +189,10 @@ export class UserService {
     // Remove password from returned user object
     const { password: _, ...userWithoutPassword } = user;
     return userWithoutPassword;
+  }
+
+  static async getProviders(options = {}) {
+    return await UserDAL.findProviders(options);
   }
 
   static async getUsers(options = {}) {

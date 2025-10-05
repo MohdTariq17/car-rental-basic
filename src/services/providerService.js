@@ -93,7 +93,7 @@ export const providerService = ProviderService;
 
 import { PrismaClient } from '../../generated/client';
 
-const prisma = new PrismaClient();
+import { prisma } from "../../../../lib/prisma";
 
 export class UserDAL {
   static async findMany(options = {}) {

@@ -7,17 +7,9 @@ export async function GET() {
       where: { active: true }
     });
     
-    const citiesByState = await prisma.city.groupBy({
-      by: ['stateId'],
-      _count: {
-        id: true
-      }
-    });
-    
     return Response.json({
       totalCities,
-      activeCities,
-      citiesByState
+      activeCities
     });
   } catch (error) {
     console.error('Error fetching city stats:', error);
@@ -25,10 +17,26 @@ export async function GET() {
   }
 }
 
-import { NextResponse } from 'next/server';
-import { PrismaClient } from '@prisma/client';
+export async function POST(request) {
+  try {
+    const data = await request.json();
+    const city = await prisma.city.create({
+      data,
+      include: {
+        state: true
+      }
+    });
+    return Response.json(city, { status: 201 });
+  } catch (error) {
+    console.error('Error creating city:', error);
+    return Response.json({ error: 'Failed to create city' }, { status: 500 });
+  }
+}
 
-const prisma = new PrismaClient();
+import { NextResponse } from 'next/server';
+
+
+import { prisma } from "../../../../lib/prisma";
 
 export async function POST(request) {
   try {

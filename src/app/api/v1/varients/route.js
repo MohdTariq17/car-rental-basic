@@ -1,7 +1,8 @@
+import { prisma } from ../../../../../lib/prisma;
 import { NextResponse } from 'next/server';
-import { PrismaClient } from '@prisma/client';
 
-const prisma = new PrismaClient();
+
+import { prisma } from "../../../../lib/prisma";
 
 // GET /api/v1/variants - Fetch all variants
 export async function GET(request) {

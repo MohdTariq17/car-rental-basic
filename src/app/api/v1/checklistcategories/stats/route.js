@@ -1,64 +1,42 @@
-import { prisma } from ../../../../../lib/prisma;
-import { NextResponse } from 'next/server';
-
-
-import { prisma } from "../../../../lib/prisma";
+import { prisma } from '../../../../../../lib/prisma';
 
 export async function GET() {
   try {
-    // Get category counts
-    const totalCategories = await prisma.checklistCategory.count();
-    const activeCategories = await prisma.checklistCategory.count({
-      where: { active: true }
-    });
-    const inactiveCategories = totalCategories - activeCategories;
+    const [totalCategories, activeCategories, totalItems] = await Promise.all([
+      prisma.checklistCategory.count(),
+      prisma.checklistCategory.count({
+        where: { is_active: true }
+      }),
+      prisma.checklistItem.count()
+    ]);
     
-    // Get total items across all categories
-    const totalItems = await prisma.checklistItem.count();
-    const activeItems = await prisma.checklistItem.count({
-      where: { active: true }
-    });
-    
-    // Get categories with item counts
-    const categoriesWithItems = await prisma.checklistCategory.findMany({
-      include: {
+    const categoriesWithItemCount = await prisma.checklistCategory.findMany({
+      select: {
+        id: true,
+        name: true,
         _count: {
           select: {
             items: true
           }
         }
-      }
+      },
+      orderBy: { name: 'asc' }
     });
     
-    const categoryStats = categoriesWithItems.map(category => ({
-      id: category.id,
-      name: category.name,
-      itemCount: category._count.items,
-      active: category.active
-    }));
-    
-    return NextResponse.json({
+    return Response.json({
       success: true,
       data: {
-        counts: {
-          total: totalCategories,
-          active: activeCategories,
-          inactive: inactiveCategories
-        },
-        items: {
-          total: totalItems,
-          active: activeItems,
-          inactive: totalItems - activeItems
-        },
-        categoryBreakdown: categoryStats
+        totalCategories,
+        activeCategories,
+        totalItems,
+        categoriesWithItemCount
       }
     });
-    
   } catch (error) {
-    console.error('Error fetching checklist category stats:', error);
-    return NextResponse.json({
-      success: false,
-      error: 'Failed to fetch statistics'
+    console.error('Error fetching checklist categories stats:', error);
+    return Response.json({ 
+      success: false, 
+      error: 'Failed to fetch stats' 
     }, { status: 500 });
   }
 }

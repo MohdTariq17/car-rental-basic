@@ -1,8 +1,80 @@
-import { prisma } from ../../../../../lib/prisma;
+import { prisma } from '../../../../../lib/prisma';
 import { NextResponse } from 'next/server';
 
+// GET /api/v1/models - Get all models
+export async function GET(request) {
+  try {
+    const { searchParams } = new URL(request.url);
+    const brandId = searchParams.get('brandId');
+    
+    const whereClause = brandId ? { brand_id: brandId } : {};
+    
+    const models = await prisma.model.findMany({
+      where: whereClause,
+      include: {
+        brand: {
+          select: {
+            id: true,
+            name: true
+          }
+        }
+      },
+      orderBy: { name: 'asc' }
+    });
+    
+    return NextResponse.json({
+      success: true,
+      data: models
+    });
+  } catch (error) {
+    console.error('Error fetching models:', error);
+    return NextResponse.json({ 
+      success: false, 
+      error: 'Failed to fetch models' 
+    }, { status: 500 });
+  }
+}
 
-import { prisma } from "../../../../lib/prisma";
+// POST /api/v1/models - Create new model
+export async function POST(request) {
+  try {
+    const data = await request.json();
+    const { name, brand_id } = data;
+    
+    if (!name || !brand_id) {
+      return NextResponse.json({ 
+        success: false, 
+        error: 'Name and brand_id are required' 
+      }, { status: 400 });
+    }
+    
+    const model = await prisma.model.create({
+      data: {
+        name: name.trim(),
+        brand_id
+      },
+      include: {
+        brand: {
+          select: {
+            id: true,
+            name: true
+          }
+        }
+      }
+    });
+    
+    return NextResponse.json({
+      success: true,
+      data: model
+    }, { status: 201 });
+  } catch (error) {
+    console.error('Error creating model:', error);
+    return NextResponse.json({ 
+      success: false, 
+      error: 'Failed to create model' 
+    }, { status: 500 });
+  }
+}
 
 // GET /api/v1/models/[id] - Get single model
 export async function GET(request, { params }) {

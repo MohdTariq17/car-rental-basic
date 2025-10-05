@@ -1,9 +1,79 @@
-import { prisma } from ../../../../../lib/prisma;
-
+import { prisma } from '../../../../../lib/prisma';
 import { NextResponse } from 'next/server';
 
+export async function GET(request) {
+  try {
+    const { searchParams } = new URL(request.url);
+    const categoryId = searchParams.get('categoryId');
+    
+    const whereClause = categoryId ? { category_id: categoryId } : {};
+    
+    const items = await prisma.checklistItem.findMany({
+      where: whereClause,
+      include: {
+        category: {
+          select: {
+            id: true,
+            name: true
+          }
+        }
+      },
+      orderBy: { name: 'asc' }
+    });
+    
+    return NextResponse.json({
+      success: true,
+      data: items
+    });
+  } catch (error) {
+    console.error('Error fetching checklist items:', error);
+    return NextResponse.json({ 
+      success: false, 
+      error: 'Failed to fetch checklist items' 
+    }, { status: 500 });
+  }
+}
 
-import { prisma } from "../../../../lib/prisma";
+export async function POST(request) {
+  try {
+    const data = await request.json();
+    const { name, category_id, description } = data;
+    
+    if (!name || !category_id) {
+      return NextResponse.json({ 
+        success: false, 
+        error: 'Name and category_id are required' 
+      }, { status: 400 });
+    }
+    
+    const item = await prisma.checklistItem.create({
+      data: {
+        name: name.trim(),
+        category_id,
+        description: description?.trim() || null
+      },
+      include: {
+        category: {
+          select: {
+            id: true,
+            name: true
+          }
+        }
+      }
+    });
+    
+    return NextResponse.json({
+      success: true,
+      data: item
+    }, { status: 201 });
+  } catch (error) {
+    console.error('Error creating checklist item:', error);
+    return NextResponse.json({ 
+      success: false, 
+      error: 'Failed to create checklist item' 
+    }, { status: 500 });
+  }
+}
 
 // GET - Fetch all checklist items
 export async function GET(request) {

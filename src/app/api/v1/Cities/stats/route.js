@@ -1,87 +1,40 @@
 import { prisma } from '../../../../../lib/prisma';
-
-export async function GET() {
-  try {
-    const totalCities = await prisma.city.count();
-    const activeCities = await prisma.city.count({
-      where: { active: true }
-    });
-    
-    return Response.json({
-      totalCities,
-      activeCities
-    });
-  } catch (error) {
-    console.error('Error fetching city stats:', error);
-    return Response.json({ error: 'Failed to fetch city stats' }, { status: 500 });
-  }
-}
-
-export async function POST(request) {
-  try {
-    const data = await request.json();
-    const city = await prisma.city.create({
-      data,
-      include: {
-        state: true
-      }
-    });
-    return Response.json(city, { status: 201 });
-  } catch (error) {
-    console.error('Error creating city:', error);
-    return Response.json({ error: 'Failed to create city' }, { status: 500 });
-  }
-}
-
 import { NextResponse } from 'next/server';
 
 export async function GET() {
   try {
-    const [totalCount, activeCount, inactiveCount] = await Promise.all([
+    const [totalCount, activeCount] = await Promise.all([
       prisma.city.count(),
-      prisma.city.count({ where: { active: true } }),
-      prisma.city.count({ where: { active: false } })
+      prisma.city.count({
+        where: { active: true }
+      })
     ]);
-
-    // Get cities grouped by state
-    const citiesByState = await prisma.state.findMany({
-      include: {
-        _count: {
-          select: {
-            cities: true
-          }
-        },
-        cities: {
-          select: {
-            id: true,
-            name: true,
-            active: true
-          }
-        }
+    
+    const inactiveCount = totalCount - activeCount;
+    
+    const citiesByState = await prisma.city.groupBy({
+      by: ['stateId'],
+      _count: {
+        id: true
       },
       orderBy: {
-        name: 'asc'
+        _count: {
+          id: 'desc'
+        }
       }
     });
-
+    
     return NextResponse.json({
       success: true,
       data: {
-        totalCount,
-        activeCount,
-        inactiveCount,
-        citiesByState: citiesByState.map(state => ({
-          stateId: state.id,
-          stateName: state.name,
-          stateCode: state.code,
-          stateActive: state.active,
-          cityCount: state._count.cities,
-          cities: state.cities
-        }))
+        total: totalCount,
+        active: activeCount,
+        inactive: inactiveCount,
+        citiesByState
       }
     });
   } catch (error) {
-    console.error('Error fetching city statistics:', error);
+    console.error('Error fetching city stats:', error);
     return NextResponse.json({
       success: false,
       error: 'Failed to fetch city statistics'

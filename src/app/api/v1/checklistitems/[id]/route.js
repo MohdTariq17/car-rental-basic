@@ -1,21 +1,9 @@
-import { prisma } from ../../../../../lib/prisma;
-
+import { prisma } from '../../../../../lib/prisma';
 import { NextResponse } from 'next/server';
 
-
-import { prisma } from "../../../../lib/prisma";
-
-// GET - Fetch single checklist item
 export async function GET(request, { params }) {
   try {
-    const { id } = params;
-    
-    if (!id) {
-      return NextResponse.json({ 
-        success: false, 
-        error: 'Item ID is required' 
-      }, { status: 400 });
-    }
+    const { id } = await params;
     
     const item = await prisma.checklistItem.findUnique({
       where: { id },
@@ -23,9 +11,7 @@ export async function GET(request, { params }) {
         category: {
           select: {
             id: true,
-            name: true,
-            description: true,
-            active: true
+            name: true
           }
         }
       }
@@ -38,15 +24,9 @@ export async function GET(request, { params }) {
       }, { status: 404 });
     }
     
-    // Parse options for response
-    const formattedItem = {
-      ...item,
-      options: item.options ? JSON.parse(item.options) : null
-    };
-    
-    return NextResponse.json({ 
-      success: true, 
-      data: formattedItem 
+    return NextResponse.json({
+      success: true,
+      data: item
     });
   } catch (error) {
     console.error('Error fetching checklist item:', error);
@@ -57,77 +37,36 @@ export async function GET(request, { params }) {
   }
 }
 
-// PUT - Update single checklist item
 export async function PUT(request, { params }) {
   try {
-    const { id } = params;
-    const body = await request.json();
-    const { 
-      name, 
-      categoryId, 
-      description, 
-      checkType, 
-      required, 
-      active,
-      options
-    } = body;
+    const { id } = await params;
+    const data = await request.json();
+    const { name, categoryId, description, checkType, required, active } = data;
     
-    if (!id) {
-      return NextResponse.json({ 
-        success: false, 
-        error: 'Item ID is required' 
-      }, { status: 400 });
-    }
-    
-    // Check if item exists
-    const existingItem = await prisma.checklistItem.findUnique({
-      where: { id }
-    });
-    
-    if (!existingItem) {
-      return NextResponse.json({ 
-        success: false, 
-        error: 'Checklist item not found' 
-      }, { status: 404 });
-    }
-    
-    // Prepare update data
-    const updateData = {};
-    if (name !== undefined) updateData.name = name.trim();
-    if (categoryId !== undefined) updateData.categoryId = categoryId;
-    if (description !== undefined) updateData.description = description?.trim() || null;
-    if (checkType !== undefined) updateData.checkType = checkType;
-    if (required !== undefined) updateData.required = Boolean(required);
-    if (active !== undefined) updateData.active = Boolean(active);
-    if (options !== undefined) updateData.options = options ? JSON.stringify(options) : null;
-    
-    // Update checklist item
-    const updatedItem = await prisma.checklistItem.update({
+    const item = await prisma.checklistItem.update({
       where: { id },
-      data: updateData,
+      data: {
+        ...(name && { name: name.trim() }),
+        ...(categoryId && { categoryId }),
+        ...(description !== undefined && { description: description?.trim() || null }),
+        ...(checkType && { checkType }),
+        ...(required !== undefined && { required }),
+        ...(active !== undefined && { active })
+      },
       include: {
         category: {
           select: {
             id: true,
-            name: true,
-            active: true
+            name: true
           }
         }
       }
     });
     
-    // Parse options for response
-    const formattedItem = {
-      ...updatedItem,
-      options: updatedItem.options ? JSON.parse(updatedItem.options) : null
-    };
-    
-    return NextResponse.json({ 
-      success: true, 
-      data: formattedItem,
-      message: 'Checklist item updated successfully' 
+    return NextResponse.json({
+      success: true,
+      data: item
     });
-    
   } catch (error) {
     console.error('Error updating checklist item:', error);
     return NextResponse.json({ 
@@ -137,40 +76,18 @@ export async function PUT(request, { params }) {
   }
 }
 
-// DELETE - Delete single checklist item
 export async function DELETE(request, { params }) {
   try {
-    const { id } = params;
+    const { id } = await params;
     
-    if (!id) {
-      return NextResponse.json({ 
-        success: false, 
-        error: 'Item ID is required' 
-      }, { status: 400 });
-    }
-    
-    // Check if item exists
-    const existingItem = await prisma.checklistItem.findUnique({
-      where: { id }
-    });
-    
-    if (!existingItem) {
-      return NextResponse.json({ 
-        success: false, 
-        error: 'Checklist item not found' 
-      }, { status: 404 });
-    }
-    
-    // Delete the item
     await prisma.checklistItem.delete({
       where: { id }
     });
     
-    return NextResponse.json({ 
-      success: true, 
-      message: `Checklist item "${existingItem.name}" deleted successfully` 
+    return NextResponse.json({
+      success: true,
+      message: 'Checklist item deleted successfully'
     });
-    
   } catch (error) {
     console.error('Error deleting checklist item:', error);
     return NextResponse.json({ 

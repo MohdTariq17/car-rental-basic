@@ -1,4 +1,4 @@
-import { prisma } from '../../../../../lib/prisma';
+import { prisma } from '../../../../lib/prisma';
 import { NextResponse } from 'next/server';
 
 // GET /api/v1/models - Get all models
@@ -7,7 +7,7 @@ export async function GET(request) {
     const { searchParams } = new URL(request.url);
     const brandId = searchParams.get('brandId');
     
-    const whereClause = brandId ? { brand_id: brandId } : {};
+    const whereClause = brandId ? { brandId } : {};
     
     const models = await prisma.model.findMany({
       where: whereClause,
@@ -39,19 +39,19 @@ export async function GET(request) {
 export async function POST(request) {
   try {
     const data = await request.json();
-    const { name, brand_id } = data;
+    const { name, brandId } = data;
     
-    if (!name || !brand_id) {
+    if (!name || !brandId) {
       return NextResponse.json({ 
         success: false, 
-        error: 'Name and brand_id are required' 
+        error: 'Name and brandId are required' 
       }, { status: 400 });
     }
     
     const model = await prisma.model.create({
       data: {
         name: name.trim(),
-        brand_id
+        brandId
       },
       include: {
         brand: {
@@ -77,7 +77,7 @@ export async function POST(request) {
 }
 
 // GET /api/v1/models/[id] - Get single model
-export async function GET(request, { params }) {
+export async function GET_single(request, { params }) {
   try {
     const { id } = await params;
 

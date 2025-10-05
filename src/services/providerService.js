@@ -137,33 +137,69 @@ export class UserDAL {
 }
 
 export const providerService = {
-  // Add your provider service methods here
   async getAllProviders() {
-    return await prisma.provider.findMany();
+    try {
+      return await prisma.provider.findMany({
+        include: {
+          city: true,
+          state: true
+        }
+      });
+    } catch (error) {
+      throw new Error(`Failed to fetch providers: ${error.message}`);
+    }
   },
   
   async getProviderById(id) {
-    return await prisma.provider.findUnique({
-      where: { id }
-    });
+    try {
+      return await prisma.provider.findUnique({
+        where: { id },
+        include: {
+          city: true,
+          state: true
+        }
+      });
+    } catch (error) {
+      throw new Error(`Failed to find provider: ${error.message}`);
+    }
   },
   
   async createProvider(data) {
-    return await prisma.provider.create({
-      data
-    });
+    try {
+      return await prisma.provider.create({
+        data,
+        include: {
+          city: true,
+          state: true
+        }
+      });
+    } catch (error) {
+      throw new Error(`Failed to create provider: ${error.message}`);
+    }
   },
   
   async updateProvider(id, data) {
-    return await prisma.provider.update({
-      where: { id },
-      data
-    });
+    try {
+      return await prisma.provider.update({
+        where: { id },
+        data,
+        include: {
+          city: true,
+          state: true
+        }
+      });
+    } catch (error) {
+      throw new Error(`Failed to update provider: ${error.message}`);
+    }
   },
   
   async deleteProvider(id) {
-    return await prisma.provider.delete({
-      where: { id }
-    });
+    try {
+      return await prisma.provider.delete({
+        where: { id }
+      });
+    } catch (error) {
+      throw new Error(`Failed to delete provider: ${error.message}`);
+    }
   }
 };

@@ -19,7 +19,7 @@ const roles = [
   { label: "Admin", value: "ADMIN" },
   { label: "Driver", value: "DRIVER" },
   { label: "Mechanic", value: "MECHANIC" },
-  { label: "Manager", value: "MANAGER" },
+  { label: "Manager", value: "MANAGE" },
 ];
 
 // All roles for filter dropdown

@@ -1,7 +1,7 @@
 // src/services/providerService.js
 
 // Import Prisma singleton instance (edit path if needed)
-import { prisma } from '../../lib/prisma';
+import { prisma } from '../lib/prisma';
 
 // Provider Service Class
 export class ProviderService {

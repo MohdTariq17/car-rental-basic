@@ -1,89 +1,5 @@
-// src/services/providerService.js
 
-// Import Prisma singleton instance (edit path if needed)
 import { prisma } from '../lib/prisma';
-
-// Provider Service Class
-export class ProviderService {
-  static async getAllProviders() {
-    try {
-      return await prisma.provider.findMany({
-        include: { city: true, state: true }
-      });
-    } catch (error) {
-      throw new Error(`Failed to fetch providers: ${error.message}`);
-    }
-  }
-
-  static async getProviderById(id) {
-    try {
-      return await prisma.provider.findUnique({
-        where: { id },
-        include: { city: true, state: true }
-      });
-    } catch (error) {
-      throw new Error(`Failed to find provider: ${error.message}`);
-    }
-  }
-
-  static async createProvider(data) {
-    try {
-      return await prisma.provider.create({
-        data,
-        include: { city: true, state: true }
-      });
-    } catch (error) {
-      throw new Error(`Failed to create provider: ${error.message}`);
-    }
-  }
-
-  static async updateProvider(id, data) {
-    try {
-      return await prisma.provider.update({
-        where: { id },
-        data,
-        include: { city: true, state: true }
-      });
-    } catch (error) {
-      throw new Error(`Failed to update provider: ${error.message}`);
-    }
-  }
-
-  static async deleteProvider(id) {
-    try {
-      return await prisma.provider.delete({
-        where: { id }
-      });
-    } catch (error) {
-      throw new Error(`Failed to delete provider: ${error.message}`);
-    }
-  }
-
-  static async registerProvider(data) {
-    try {
-      const providerData = {
-        ...data,
-        registration_status: 'Pending_Approval'
-      };
-      return await prisma.provider.create({
-        data: providerData,
-        include: { city: true, state: true }
-      });
-    } catch (error) {
-      throw new Error(`Failed to register provider: ${error.message}`);
-    }
-  }
-}
-
-// For backward compatibility
-export const providerService = ProviderService;
-
-
-
-// src/services/userDAL.js
-
-// Import Prisma singleton instance (edit path if needed)
-import { prisma } from '../../../../lib/prisma';
 
 export class UserDAL {
   static async findMany(options = {}) {
@@ -101,10 +17,10 @@ export class UserDAL {
             name: true,
             username: true,
             email: true,
-            role_id: true,
+            role: true,
             is_active: true,
-            createdAt: true,
-            updatedAt: true,
+            created_at: true,
+            updated_at: true,
           },
         }),
         prisma.user.count({ where }),
@@ -124,10 +40,10 @@ export class UserDAL {
           name: true,
           username: true,
           email: true,
-          role_id: true,
+          role: true,
           is_active: true,
-          createdAt: true,
-          updatedAt: true,
+          created_at: true,
+          updated_at: true,
         },
       });
     } catch (error) {
@@ -164,10 +80,10 @@ export class UserDAL {
           name: true,
           username: true,
           email: true,
-          role_id: true,
+          role: true,
           is_active: true,
-          createdAt: true,
-          updatedAt: true,
+          created_at: true,
+          updated_at: true,
         },
       });
     } catch (error) {
@@ -185,10 +101,10 @@ export class UserDAL {
           name: true,
           username: true,
           email: true,
-          role_id: true,
+          role: true,
           is_active: true,
-          createdAt: true,
-          updatedAt: true,
+          created_at: true,
+          updated_at: true,
         },
       });
     } catch (error) {
@@ -211,7 +127,7 @@ export class UserDAL {
       ...options,
       where: {
         ...options.where,
-        role_id: 'provider',
+        role: 'PROVIDER',
       },
     });
   }

@@ -1,63 +1,54 @@
+// src/services/providerService.js
 
+// Import Prisma singleton instance (edit path if needed)
 import { prisma } from '../../../../lib/prisma';
 
+// Provider Service Class
 export class ProviderService {
   static async getAllProviders() {
     try {
       return await prisma.provider.findMany({
-        include: {
-          city: true,
-          state: true
-        }
+        include: { city: true, state: true }
       });
     } catch (error) {
       throw new Error(`Failed to fetch providers: ${error.message}`);
     }
   }
-  
+
   static async getProviderById(id) {
     try {
       return await prisma.provider.findUnique({
         where: { id },
-        include: {
-          city: true,
-          state: true
-        }
+        include: { city: true, state: true }
       });
     } catch (error) {
       throw new Error(`Failed to find provider: ${error.message}`);
     }
   }
-  
+
   static async createProvider(data) {
     try {
       return await prisma.provider.create({
         data,
-        include: {
-          city: true,
-          state: true
-        }
+        include: { city: true, state: true }
       });
     } catch (error) {
       throw new Error(`Failed to create provider: ${error.message}`);
     }
   }
-  
+
   static async updateProvider(id, data) {
     try {
       return await prisma.provider.update({
         where: { id },
         data,
-        include: {
-          city: true,
-          state: true
-        }
+        include: { city: true, state: true }
       });
     } catch (error) {
       throw new Error(`Failed to update provider: ${error.message}`);
     }
   }
-  
+
   static async deleteProvider(id) {
     try {
       return await prisma.provider.delete({
@@ -74,13 +65,9 @@ export class ProviderService {
         ...data,
         registration_status: 'Pending_Approval'
       };
-      
       return await prisma.provider.create({
         data: providerData,
-        include: {
-          city: true,
-          state: true
-        }
+        include: { city: true, state: true }
       });
     } catch (error) {
       throw new Error(`Failed to register provider: ${error.message}`);
@@ -88,17 +75,20 @@ export class ProviderService {
   }
 }
 
-// Export for backward compatibility
+// For backward compatibility
 export const providerService = ProviderService;
 
-import { PrismaClient } from '../../generated/client';
 
-import { prisma } from "../../../../lib/prisma";
+
+// src/services/userDAL.js
+
+// Import Prisma singleton instance (edit path if needed)
+import { prisma } from '../../../../lib/prisma';
 
 export class UserDAL {
   static async findMany(options = {}) {
     const { skip = 0, take = 10, where = {}, orderBy = {} } = options;
-    
+
     try {
       const [users, totalCount] = await Promise.all([
         prisma.user.findMany({
@@ -119,7 +109,6 @@ export class UserDAL {
         }),
         prisma.user.count({ where }),
       ]);
-
       return { users, totalCount };
     } catch (error) {
       throw new Error(`Failed to fetch users: ${error.message}`);
@@ -227,3 +216,4 @@ export class UserDAL {
     });
   }
 }
+

@@ -87,11 +87,129 @@ Prisma.NullTypes = {
  */
 exports.Prisma.UserScalarFieldEnum = {
   id: 'id',
-  email: 'email',
-  password: 'password',
   name: 'name',
+  email: 'email',
+  mobile: 'mobile',
+  username: 'username',
+  password: 'password',
   role: 'role',
-  is_active: 'is_active'
+  is_active: 'is_active',
+  email_verified: 'email_verified',
+  mobile_verified: 'mobile_verified',
+  created_at: 'created_at',
+  updated_at: 'updated_at'
+};
+
+exports.Prisma.ProviderScalarFieldEnum = {
+  id: 'id',
+  registration_status: 'registration_status',
+  name: 'name',
+  email: 'email',
+  mobile: 'mobile',
+  alternate_mobile: 'alternate_mobile',
+  address: 'address',
+  cityId: 'cityId',
+  stateId: 'stateId',
+  zipcode: 'zipcode',
+  mobileOTP: 'mobileOTP',
+  emailOTP: 'emailOTP',
+  is_active: 'is_active',
+  createdAt: 'createdAt',
+  updatedAt: 'updatedAt'
+};
+
+exports.Prisma.OtpScalarFieldEnum = {
+  id: 'id',
+  mobile: 'mobile',
+  email: 'email',
+  otp: 'otp',
+  type: 'type',
+  is_used: 'is_used',
+  expires_at: 'expires_at',
+  created_at: 'created_at',
+  verified_at: 'verified_at'
+};
+
+exports.Prisma.BrandScalarFieldEnum = {
+  id: 'id',
+  name: 'name',
+  logo: 'logo',
+  active: 'active',
+  createdAt: 'createdAt',
+  updatedAt: 'updatedAt'
+};
+
+exports.Prisma.ModelScalarFieldEnum = {
+  id: 'id',
+  name: 'name',
+  brandId: 'brandId',
+  active: 'active',
+  createdAt: 'createdAt',
+  updatedAt: 'updatedAt'
+};
+
+exports.Prisma.VariantScalarFieldEnum = {
+  id: 'id',
+  name: 'name',
+  modelId: 'modelId',
+  fuelType: 'fuelType',
+  transmission: 'transmission',
+  seatingCapacity: 'seatingCapacity',
+  active: 'active',
+  createdAt: 'createdAt',
+  updatedAt: 'updatedAt'
+};
+
+exports.Prisma.StateScalarFieldEnum = {
+  id: 'id',
+  name: 'name',
+  code: 'code',
+  active: 'active',
+  createdAt: 'createdAt',
+  updatedAt: 'updatedAt'
+};
+
+exports.Prisma.CityScalarFieldEnum = {
+  id: 'id',
+  name: 'name',
+  stateId: 'stateId',
+  pincode: 'pincode',
+  active: 'active',
+  createdAt: 'createdAt',
+  updatedAt: 'updatedAt'
+};
+
+exports.Prisma.ChecklistCategoryScalarFieldEnum = {
+  id: 'id',
+  name: 'name',
+  description: 'description',
+  active: 'active',
+  createdAt: 'createdAt',
+  updatedAt: 'updatedAt'
+};
+
+exports.Prisma.ChecklistItemScalarFieldEnum = {
+  id: 'id',
+  name: 'name',
+  categoryId: 'categoryId',
+  description: 'description',
+  checkType: 'checkType',
+  required: 'required',
+  active: 'active',
+  createdAt: 'createdAt',
+  updatedAt: 'updatedAt'
+};
+
+exports.Prisma.SettingScalarFieldEnum = {
+  id: 'id',
+  key: 'key',
+  value: 'value',
+  category: 'category',
+  description: 'description',
+  dataType: 'dataType',
+  active: 'active',
+  createdAt: 'createdAt',
+  updatedAt: 'updatedAt'
 };
 
 exports.Prisma.SortOrder = {
@@ -106,15 +224,32 @@ exports.Prisma.QueryMode = {
 exports.Role = exports.$Enums.Role = {
   USER: 'USER',
   ADMIN: 'ADMIN',
-  HOSTER: 'HOSTER',
+  PROVIDER: 'PROVIDER',
   DRIVER: 'DRIVER',
   MECHANIC: 'MECHANIC',
   CUSTOMER: 'CUSTOMER',
   MANAGER: 'MANAGER'
 };
 
+exports.registration_status = exports.$Enums.registration_status = {
+  Pending: 'Pending',
+  Pending_Approval: 'Pending_Approval',
+  Approved: 'Approved',
+  Rejected: 'Rejected'
+};
+
 exports.Prisma.ModelName = {
-  user: 'user'
+  user: 'user',
+  Provider: 'Provider',
+  otp: 'otp',
+  Brand: 'Brand',
+  Model: 'Model',
+  Variant: 'Variant',
+  State: 'State',
+  City: 'City',
+  ChecklistCategory: 'ChecklistCategory',
+  ChecklistItem: 'ChecklistItem',
+  Setting: 'Setting'
 };
 /**
  * Create the Client
@@ -163,7 +298,6 @@ const config = {
     "db"
   ],
   "activeProvider": "mongodb",
-  "postinstall": false,
   "inlineDatasources": {
     "db": {
       "url": {
@@ -172,13 +306,13 @@ const config = {
       }
     }
   },
-  "inlineSchema": "generator client {\n  provider      = \"prisma-client-js\"\n  output        = \"../generated/client\"\n  binaryTargets = [\"native\", \"rhel-openssl-3.0.x\", \"debian-openssl-3.0.x\"]\n}\n\ndatasource db {\n  provider = \"mongodb\"\n  url      = env(\"DB_URL\")\n}\n\nenum Role {\n  USER\n  ADMIN\n  HOSTER\n  DRIVER\n  MECHANIC\n  CUSTOMER\n  MANAGER\n}\n\nmodel user {\n  id        String  @id @default(auto()) @map(\"_id\") @db.ObjectId\n  email     String  @unique\n  password  String\n  name      String\n  role      Role\n  is_active Boolean @default(true)\n}\n",
-  "inlineSchemaHash": "e63e5b29529b873bdd08bc6049ad9c0494b809c069b2243f3703f5ad7fdd6ac0",
+  "inlineSchema": "generator client {\n  provider      = \"prisma-client-js\"\n  output        = \"../generated/client\"\n  binaryTargets = [\"native\", \"rhel-openssl-3.0.x\", \"debian-openssl-3.0.x\"]\n}\n\ndatasource db {\n  provider = \"mongodb\"\n  url      = env(\"DB_URL\")\n}\n\nenum Role {\n  USER\n  ADMIN\n  PROVIDER\n  DRIVER\n  MECHANIC\n  CUSTOMER\n  MANAGER\n}\n\nenum registration_status {\n  Pending\n  Pending_Approval\n  Approved\n  Rejected\n}\n\nmodel user {\n  id              String   @id @default(auto()) @map(\"_id\") @db.ObjectId\n  name            String\n  email           String   @unique\n  mobile          String   @unique\n  username        String   @unique\n  password        String\n  role            Role\n  is_active       Boolean  @default(true)\n  email_verified  Boolean  @default(false)\n  mobile_verified Boolean  @default(false)\n  created_at      DateTime @default(now())\n  updated_at      DateTime @updatedAt\n}\n\nmodel Provider {\n  id                  String              @id @default(auto()) @map(\"_id\") @db.ObjectId\n  registration_status registration_status @default(Pending_Approval)\n  name                String\n  email               String              @unique\n  mobile              String              @unique\n  alternate_mobile    String\n  address             String\n  cityId              String              @db.ObjectId\n  city                City                @relation(fields: [cityId], references: [id])\n  stateId             String              @db.ObjectId\n  state               State               @relation(fields: [stateId], references: [id])\n  zipcode             String\n  mobileOTP           String\n  emailOTP            String\n  is_active           Boolean             @default(true)\n  createdAt           DateTime            @default(now())\n  updatedAt           DateTime            @updatedAt\n}\n\nmodel otp {\n  id          String    @id @default(auto()) @map(\"_id\") @db.ObjectId\n  mobile      String? // For mobile OTP\n  email       String? // For email OTP\n  otp         String\n  type        String // 'mobile' or 'email'\n  is_used     Boolean   @default(false)\n  expires_at  DateTime\n  created_at  DateTime  @default(now())\n  verified_at DateTime?\n\n  @@map(\"otps\")\n}\n\nmodel Brand {\n  id        String   @id @default(auto()) @map(\"_id\") @db.ObjectId\n  name      String   @unique\n  logo      String?\n  active    Boolean  @default(true)\n  models    Model[]\n  createdAt DateTime @default(now())\n  updatedAt DateTime @updatedAt\n}\n\nmodel Model {\n  id        String    @id @default(auto()) @map(\"_id\") @db.ObjectId\n  name      String\n  brandId   String    @db.ObjectId\n  brand     Brand     @relation(fields: [brandId], references: [id])\n  variants  Variant[]\n  active    Boolean   @default(true)\n  createdAt DateTime  @default(now())\n  updatedAt DateTime  @updatedAt\n\n  @@unique([name, brandId])\n}\n\nmodel Variant {\n  id              String   @id @default(auto()) @map(\"_id\") @db.ObjectId\n  name            String\n  modelId         String   @db.ObjectId\n  model           Model    @relation(fields: [modelId], references: [id])\n  fuelType        String?\n  transmission    String?\n  seatingCapacity Int?\n  active          Boolean  @default(true)\n  createdAt       DateTime @default(now())\n  updatedAt       DateTime @updatedAt\n}\n\nmodel State {\n  id        String     @id @default(auto()) @map(\"_id\") @db.ObjectId\n  name      String     @unique\n  code      String     @unique\n  active    Boolean    @default(true)\n  cities    City[]\n  providers Provider[] // Add this line\n  createdAt DateTime   @default(now())\n  updatedAt DateTime   @updatedAt\n}\n\nmodel City {\n  id        String     @id @default(auto()) @map(\"_id\") @db.ObjectId\n  name      String\n  stateId   String     @db.ObjectId\n  state     State      @relation(fields: [stateId], references: [id])\n  pincode   String?\n  active    Boolean    @default(true)\n  providers Provider[] // Add this line\n  createdAt DateTime   @default(now())\n  updatedAt DateTime   @updatedAt\n}\n\nmodel ChecklistCategory {\n  id          String          @id @default(auto()) @map(\"_id\") @db.ObjectId\n  name        String          @unique\n  description String?\n  active      Boolean         @default(true)\n  items       ChecklistItem[]\n  createdAt   DateTime        @default(now())\n  updatedAt   DateTime        @updatedAt\n}\n\nmodel ChecklistItem {\n  id          String            @id @default(auto()) @map(\"_id\") @db.ObjectId\n  name        String\n  categoryId  String            @db.ObjectId\n  category    ChecklistCategory @relation(fields: [categoryId], references: [id])\n  description String?\n  checkType   String? // e.g., 'boolean', 'text', 'number'\n  required    Boolean           @default(false)\n  active      Boolean           @default(true)\n  createdAt   DateTime          @default(now())\n  updatedAt   DateTime          @updatedAt\n}\n\nmodel Setting {\n  id          String   @id @default(auto()) @map(\"_id\") @db.ObjectId\n  key         String   @unique\n  value       String\n  category    String // e.g., 'general', 'email', 'payment'\n  description String?\n  dataType    String? // e.g., 'string', 'number', 'boolean'\n  active      Boolean  @default(true)\n  createdAt   DateTime @default(now())\n  updatedAt   DateTime @updatedAt\n}\n",
+  "inlineSchemaHash": "237133681aeba74668931cf6cabee622307a05ebe6dcd834ef19c1c400b25318",
   "copyEngine": true
 }
 config.dirname = '/'
 
-config.runtimeDataModel = JSON.parse("{\"models\":{\"user\":{\"fields\":[{\"name\":\"id\",\"kind\":\"scalar\",\"type\":\"String\",\"dbName\":\"_id\"},{\"name\":\"email\",\"kind\":\"scalar\",\"type\":\"String\"},{\"name\":\"password\",\"kind\":\"scalar\",\"type\":\"String\"},{\"name\":\"name\",\"kind\":\"scalar\",\"type\":\"String\"},{\"name\":\"role\",\"kind\":\"enum\",\"type\":\"Role\"},{\"name\":\"is_active\",\"kind\":\"scalar\",\"type\":\"Boolean\"}],\"dbName\":null}},\"enums\":{},\"types\":{}}")
+config.runtimeDataModel = JSON.parse("{\"models\":{\"user\":{\"fields\":[{\"name\":\"id\",\"kind\":\"scalar\",\"type\":\"String\",\"dbName\":\"_id\"},{\"name\":\"name\",\"kind\":\"scalar\",\"type\":\"String\"},{\"name\":\"email\",\"kind\":\"scalar\",\"type\":\"String\"},{\"name\":\"mobile\",\"kind\":\"scalar\",\"type\":\"String\"},{\"name\":\"username\",\"kind\":\"scalar\",\"type\":\"String\"},{\"name\":\"password\",\"kind\":\"scalar\",\"type\":\"String\"},{\"name\":\"role\",\"kind\":\"enum\",\"type\":\"Role\"},{\"name\":\"is_active\",\"kind\":\"scalar\",\"type\":\"Boolean\"},{\"name\":\"email_verified\",\"kind\":\"scalar\",\"type\":\"Boolean\"},{\"name\":\"mobile_verified\",\"kind\":\"scalar\",\"type\":\"Boolean\"},{\"name\":\"created_at\",\"kind\":\"scalar\",\"type\":\"DateTime\"},{\"name\":\"updated_at\",\"kind\":\"scalar\",\"type\":\"DateTime\"}],\"dbName\":null},\"Provider\":{\"fields\":[{\"name\":\"id\",\"kind\":\"scalar\",\"type\":\"String\",\"dbName\":\"_id\"},{\"name\":\"registration_status\",\"kind\":\"enum\",\"type\":\"registration_status\"},{\"name\":\"name\",\"kind\":\"scalar\",\"type\":\"String\"},{\"name\":\"email\",\"kind\":\"scalar\",\"type\":\"String\"},{\"name\":\"mobile\",\"kind\":\"scalar\",\"type\":\"String\"},{\"name\":\"alternate_mobile\",\"kind\":\"scalar\",\"type\":\"String\"},{\"name\":\"address\",\"kind\":\"scalar\",\"type\":\"String\"},{\"name\":\"cityId\",\"kind\":\"scalar\",\"type\":\"String\"},{\"name\":\"city\",\"kind\":\"object\",\"type\":\"City\",\"relationName\":\"CityToProvider\"},{\"name\":\"stateId\",\"kind\":\"scalar\",\"type\":\"String\"},{\"name\":\"state\",\"kind\":\"object\",\"type\":\"State\",\"relationName\":\"ProviderToState\"},{\"name\":\"zipcode\",\"kind\":\"scalar\",\"type\":\"String\"},{\"name\":\"mobileOTP\",\"kind\":\"scalar\",\"type\":\"String\"},{\"name\":\"emailOTP\",\"kind\":\"scalar\",\"type\":\"String\"},{\"name\":\"is_active\",\"kind\":\"scalar\",\"type\":\"Boolean\"},{\"name\":\"createdAt\",\"kind\":\"scalar\",\"type\":\"DateTime\"},{\"name\":\"updatedAt\",\"kind\":\"scalar\",\"type\":\"DateTime\"}],\"dbName\":null},\"otp\":{\"fields\":[{\"name\":\"id\",\"kind\":\"scalar\",\"type\":\"String\",\"dbName\":\"_id\"},{\"name\":\"mobile\",\"kind\":\"scalar\",\"type\":\"String\"},{\"name\":\"email\",\"kind\":\"scalar\",\"type\":\"String\"},{\"name\":\"otp\",\"kind\":\"scalar\",\"type\":\"String\"},{\"name\":\"type\",\"kind\":\"scalar\",\"type\":\"String\"},{\"name\":\"is_used\",\"kind\":\"scalar\",\"type\":\"Boolean\"},{\"name\":\"expires_at\",\"kind\":\"scalar\",\"type\":\"DateTime\"},{\"name\":\"created_at\",\"kind\":\"scalar\",\"type\":\"DateTime\"},{\"name\":\"verified_at\",\"kind\":\"scalar\",\"type\":\"DateTime\"}],\"dbName\":\"otps\"},\"Brand\":{\"fields\":[{\"name\":\"id\",\"kind\":\"scalar\",\"type\":\"String\",\"dbName\":\"_id\"},{\"name\":\"name\",\"kind\":\"scalar\",\"type\":\"String\"},{\"name\":\"logo\",\"kind\":\"scalar\",\"type\":\"String\"},{\"name\":\"active\",\"kind\":\"scalar\",\"type\":\"Boolean\"},{\"name\":\"models\",\"kind\":\"object\",\"type\":\"Model\",\"relationName\":\"BrandToModel\"},{\"name\":\"createdAt\",\"kind\":\"scalar\",\"type\":\"DateTime\"},{\"name\":\"updatedAt\",\"kind\":\"scalar\",\"type\":\"DateTime\"}],\"dbName\":null},\"Model\":{\"fields\":[{\"name\":\"id\",\"kind\":\"scalar\",\"type\":\"String\",\"dbName\":\"_id\"},{\"name\":\"name\",\"kind\":\"scalar\",\"type\":\"String\"},{\"name\":\"brandId\",\"kind\":\"scalar\",\"type\":\"String\"},{\"name\":\"brand\",\"kind\":\"object\",\"type\":\"Brand\",\"relationName\":\"BrandToModel\"},{\"name\":\"variants\",\"kind\":\"object\",\"type\":\"Variant\",\"relationName\":\"ModelToVariant\"},{\"name\":\"active\",\"kind\":\"scalar\",\"type\":\"Boolean\"},{\"name\":\"createdAt\",\"kind\":\"scalar\",\"type\":\"DateTime\"},{\"name\":\"updatedAt\",\"kind\":\"scalar\",\"type\":\"DateTime\"}],\"dbName\":null},\"Variant\":{\"fields\":[{\"name\":\"id\",\"kind\":\"scalar\",\"type\":\"String\",\"dbName\":\"_id\"},{\"name\":\"name\",\"kind\":\"scalar\",\"type\":\"String\"},{\"name\":\"modelId\",\"kind\":\"scalar\",\"type\":\"String\"},{\"name\":\"model\",\"kind\":\"object\",\"type\":\"Model\",\"relationName\":\"ModelToVariant\"},{\"name\":\"fuelType\",\"kind\":\"scalar\",\"type\":\"String\"},{\"name\":\"transmission\",\"kind\":\"scalar\",\"type\":\"String\"},{\"name\":\"seatingCapacity\",\"kind\":\"scalar\",\"type\":\"Int\"},{\"name\":\"active\",\"kind\":\"scalar\",\"type\":\"Boolean\"},{\"name\":\"createdAt\",\"kind\":\"scalar\",\"type\":\"DateTime\"},{\"name\":\"updatedAt\",\"kind\":\"scalar\",\"type\":\"DateTime\"}],\"dbName\":null},\"State\":{\"fields\":[{\"name\":\"id\",\"kind\":\"scalar\",\"type\":\"String\",\"dbName\":\"_id\"},{\"name\":\"name\",\"kind\":\"scalar\",\"type\":\"String\"},{\"name\":\"code\",\"kind\":\"scalar\",\"type\":\"String\"},{\"name\":\"active\",\"kind\":\"scalar\",\"type\":\"Boolean\"},{\"name\":\"cities\",\"kind\":\"object\",\"type\":\"City\",\"relationName\":\"CityToState\"},{\"name\":\"providers\",\"kind\":\"object\",\"type\":\"Provider\",\"relationName\":\"ProviderToState\"},{\"name\":\"createdAt\",\"kind\":\"scalar\",\"type\":\"DateTime\"},{\"name\":\"updatedAt\",\"kind\":\"scalar\",\"type\":\"DateTime\"}],\"dbName\":null},\"City\":{\"fields\":[{\"name\":\"id\",\"kind\":\"scalar\",\"type\":\"String\",\"dbName\":\"_id\"},{\"name\":\"name\",\"kind\":\"scalar\",\"type\":\"String\"},{\"name\":\"stateId\",\"kind\":\"scalar\",\"type\":\"String\"},{\"name\":\"state\",\"kind\":\"object\",\"type\":\"State\",\"relationName\":\"CityToState\"},{\"name\":\"pincode\",\"kind\":\"scalar\",\"type\":\"String\"},{\"name\":\"active\",\"kind\":\"scalar\",\"type\":\"Boolean\"},{\"name\":\"providers\",\"kind\":\"object\",\"type\":\"Provider\",\"relationName\":\"CityToProvider\"},{\"name\":\"createdAt\",\"kind\":\"scalar\",\"type\":\"DateTime\"},{\"name\":\"updatedAt\",\"kind\":\"scalar\",\"type\":\"DateTime\"}],\"dbName\":null},\"ChecklistCategory\":{\"fields\":[{\"name\":\"id\",\"kind\":\"scalar\",\"type\":\"String\",\"dbName\":\"_id\"},{\"name\":\"name\",\"kind\":\"scalar\",\"type\":\"String\"},{\"name\":\"description\",\"kind\":\"scalar\",\"type\":\"String\"},{\"name\":\"active\",\"kind\":\"scalar\",\"type\":\"Boolean\"},{\"name\":\"items\",\"kind\":\"object\",\"type\":\"ChecklistItem\",\"relationName\":\"ChecklistCategoryToChecklistItem\"},{\"name\":\"createdAt\",\"kind\":\"scalar\",\"type\":\"DateTime\"},{\"name\":\"updatedAt\",\"kind\":\"scalar\",\"type\":\"DateTime\"}],\"dbName\":null},\"ChecklistItem\":{\"fields\":[{\"name\":\"id\",\"kind\":\"scalar\",\"type\":\"String\",\"dbName\":\"_id\"},{\"name\":\"name\",\"kind\":\"scalar\",\"type\":\"String\"},{\"name\":\"categoryId\",\"kind\":\"scalar\",\"type\":\"String\"},{\"name\":\"category\",\"kind\":\"object\",\"type\":\"ChecklistCategory\",\"relationName\":\"ChecklistCategoryToChecklistItem\"},{\"name\":\"description\",\"kind\":\"scalar\",\"type\":\"String\"},{\"name\":\"checkType\",\"kind\":\"scalar\",\"type\":\"String\"},{\"name\":\"required\",\"kind\":\"scalar\",\"type\":\"Boolean\"},{\"name\":\"active\",\"kind\":\"scalar\",\"type\":\"Boolean\"},{\"name\":\"createdAt\",\"kind\":\"scalar\",\"type\":\"DateTime\"},{\"name\":\"updatedAt\",\"kind\":\"scalar\",\"type\":\"DateTime\"}],\"dbName\":null},\"Setting\":{\"fields\":[{\"name\":\"id\",\"kind\":\"scalar\",\"type\":\"String\",\"dbName\":\"_id\"},{\"name\":\"key\",\"kind\":\"scalar\",\"type\":\"String\"},{\"name\":\"value\",\"kind\":\"scalar\",\"type\":\"String\"},{\"name\":\"category\",\"kind\":\"scalar\",\"type\":\"String\"},{\"name\":\"description\",\"kind\":\"scalar\",\"type\":\"String\"},{\"name\":\"dataType\",\"kind\":\"scalar\",\"type\":\"String\"},{\"name\":\"active\",\"kind\":\"scalar\",\"type\":\"Boolean\"},{\"name\":\"createdAt\",\"kind\":\"scalar\",\"type\":\"DateTime\"},{\"name\":\"updatedAt\",\"kind\":\"scalar\",\"type\":\"DateTime\"}],\"dbName\":null}},\"enums\":{},\"types\":{}}")
 defineDmmfProperty(exports.Prisma, config.runtimeDataModel)
 config.engineWasm = {
   getRuntime: async () => require('./query_engine_bg.js'),

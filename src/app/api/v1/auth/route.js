@@ -50,13 +50,14 @@ export async function POST(request) {
     }
 
     console.log('Request body parsed successfully');
-    const { email, password } = body;
+    // Update the user lookup logic in the POST function
+    const { email, username, password } = body;
 
-    // Validate input
-    if (!email || !password) {
-      console.log('Missing email or password');
+    // Validate input - accept either email or username
+    if ((!email && !username) || !password) {
+      console.log('Missing email/username or password');
       return NextResponse.json({
-        message: "Email and password are required",
+        message: "Email/username and password are required",
         statusCode: 400,
         error: "Missing required fields"
       }, {
@@ -64,15 +65,21 @@ export async function POST(request) {
       });
     }
 
-    console.log('Searching for user with email:', email);
+    // Determine search criteria based on what was provided
+    let searchCriteria = {};
+    if (email) {
+      searchCriteria.email = email.toLowerCase().trim();
+      console.log('Searching for user with email:', email);
+    } else if (username) {
+      searchCriteria.username = username.trim();
+      console.log('Searching for user with username:', username);
+    }
 
-    // Find user with better error handling
+    // Find user with updated search criteria
     let user;
     try {
       user = await prisma.user.findUnique({
-        where: {
-          email: email.toLowerCase().trim()
-        }
+        where: searchCriteria
       });
       console.log('User query completed, user found:', !!user);
     } catch (dbError) {
@@ -130,7 +137,7 @@ export async function POST(request) {
     if (!isPasswordValid) {
       console.log('Invalid password');
       return NextResponse.json({
-        message: "Invalid credentials",
+        message: "Invalid Password or Email",
         statusCode: 401,
         error: "Invalid password"
       }, {
@@ -191,7 +198,7 @@ export async function POST(request) {
       path: '/'
     });
 
-    console.log('Login successful for user:', email);
+    console.log('Login successful for user:', email || username);
     return response;
 
   } catch (error) {

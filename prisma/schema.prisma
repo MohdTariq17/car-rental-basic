@@ -1,3 +1,4 @@
+
 generator client {
   provider = "prisma-client-js"
   output = "../generated/client"
@@ -11,7 +12,7 @@ datasource db {
 enum Role {
   USER
   ADMIN
-  HOSTER
+  PROVIDER
   DRIVER
   MECHANIC
   CUSTOMER
@@ -19,11 +20,152 @@ enum Role {
 
 }
 
+enum registration_status {
+  Pending
+  Pending_Approval
+  Approved
+  Rejected
+}
+
+
 model user {
   id        String   @id @default(auto()) @map("_id") @db.ObjectId
-  email     String   @unique
-  password  String
   name      String
-  role      Role     
-  is_active Boolean  @default(true)
+  email      String   @unique
+  mobile     String   @unique
+  username   String   @unique
+  password   String
+  role         Role
+  is_active   Boolean  @default(true)
+  email_verified Boolean  @default(false)
+  mobile_verified Boolean  @default(false)
+  created_at  DateTime @default(now())
+  updated_at  DateTime @updatedAt
+}
+
+ model Provider {
+    id                  String              @id @default(auto()) @map("_id") @db.ObjectId
+    registration_status registration_status @default(Pending_Approval)
+    name                String
+    email               String              @unique
+    mobile              String              @unique
+    alternate_mobile    String
+    address             String
+    cityId              String              @db.ObjectId
+    city                City                @relation(fields: [cityId], references: [id])
+    stateId             String              @db.ObjectId
+    state               State               @relation(fields: [stateId], references: [id])
+    zipcode             String
+    mobileOTP           String
+    emailOTP            String
+    is_active           Boolean             @default(true)
+    createdAt           DateTime            @default(now())
+    updatedAt           DateTime            @updatedAt
+}
+
+model otp {
+  id          String    @id @default(auto()) @map("_id") @db.ObjectId
+  mobile      String? // For mobile OTP
+  email       String? // For email OTP
+  otp         String
+  type        String // 'mobile' or 'email'
+  is_used     Boolean   @default(false)
+  expires_at  DateTime
+  created_at  DateTime  @default(now())
+  verified_at DateTime?
+
+  @@map("otps")
+}
+
+model Brand {
+  id        String   @id @default(auto()) @map("_id") @db.ObjectId
+  name      String   @unique
+  logo      String?
+  active    Boolean  @default(true)
+  models    Model[]
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+model Model {
+  id        String    @id @default(auto()) @map("_id") @db.ObjectId
+  name      String
+  brandId   String    @db.ObjectId
+  brand     Brand     @relation(fields: [brandId], references: [id])
+  variants  Variant[]
+  active    Boolean   @default(true)
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+
+  @@unique([name, brandId])
+}
+
+model Variant {
+  id              String   @id @default(auto()) @map("_id") @db.ObjectId
+  name            String
+  modelId         String   @db.ObjectId
+  model           Model    @relation(fields: [modelId], references: [id])
+  fuelType        String?
+  transmission    String?
+  seatingCapacity Int?
+  active          Boolean  @default(true)
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+}
+
+model State {
+  id        String     @id @default(auto()) @map("_id") @db.ObjectId
+  name      String     @unique
+  code      String     @unique
+  active    Boolean    @default(true)
+  cities    City[]
+  providers Provider[] // Add this line
+  createdAt DateTime   @default(now())
+  updatedAt DateTime   @updatedAt
+}
+
+model City {
+  id        String     @id @default(auto()) @map("_id") @db.ObjectId
+  name      String
+  stateId   String     @db.ObjectId
+  state     State      @relation(fields: [stateId], references: [id])
+  pincode   String?
+  active    Boolean    @default(true)
+  providers Provider[] // Add this line
+  createdAt DateTime   @default(now())
+  updatedAt DateTime   @updatedAt
+}
+
+model ChecklistCategory {
+  id          String          @id @default(auto()) @map("_id") @db.ObjectId
+  name        String          @unique
+  description String?
+  active      Boolean         @default(true)
+  items       ChecklistItem[]
+  createdAt   DateTime        @default(now())
+  updatedAt   DateTime        @updatedAt
+}
+
+model ChecklistItem {
+  id          String            @id @default(auto()) @map("_id") @db.ObjectId
+  name        String
+  categoryId  String            @db.ObjectId
+  category    ChecklistCategory @relation(fields: [categoryId], references: [id])
+  description String?
+  checkType   String? // e.g., 'boolean', 'text', 'number'
+  required    Boolean           @default(false)
+  active      Boolean           @default(true)
+  createdAt   DateTime          @default(now())
+  updatedAt   DateTime          @updatedAt
+}
+
+model Setting {
+  id          String   @id @default(auto()) @map("_id") @db.ObjectId
+  key         String   @unique
+  value       String
+  category    String // e.g., 'general', 'email', 'payment'
+  description String?
+  dataType    String? // e.g., 'string', 'number', 'boolean'
+  active      Boolean  @default(true)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
 }

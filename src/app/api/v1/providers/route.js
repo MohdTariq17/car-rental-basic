@@ -1,5 +1,6 @@
 
 import { NextResponse } from 'next/server';
+import { PrismaClient } from '../../../../../generated/client';
 import { ProviderService } from '../../../../../services/providerService.js';
 
 export async function POST(request) {

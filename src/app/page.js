@@ -6,7 +6,7 @@ import { useRouter } from 'next/navigation';
 const LoginPage = () => {
   const router = useRouter();
   const [formData, setFormData] = useState({
-    identifier: '', // Can be email or username
+    identifier: '',
     password: ''
   });
   const [errors, setErrors] = useState({});
@@ -14,18 +14,14 @@ const LoginPage = () => {
   const [isLoading, setIsLoading] = useState(false);
   const [isDarkMode, setIsDarkMode] = useState(false);
 
-  // Load theme preference
   useEffect(() => {
     const savedTheme = localStorage.getItem('theme');
     const systemPrefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
-    
     const shouldUseDark = savedTheme ? savedTheme === 'dark' : systemPrefersDark;
     setIsDarkMode(shouldUseDark);
-    
     document.documentElement.setAttribute('data-theme', shouldUseDark ? 'dark' : 'light');
   }, []);
 
-  // Toggle theme
   const toggleTheme = () => {
     const newTheme = !isDarkMode;
     setIsDarkMode(newTheme);
@@ -34,68 +30,39 @@ const LoginPage = () => {
     document.documentElement.setAttribute('data-theme', themeValue);
   };
 
-  // Detect if input is email or username
-  const isEmail = (input) => {
-    return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(input);
-  };
+  const isEmail = (input) => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(input);
 
-  // Form validation
   const validateForm = () => {
     const newErrors = {};
-    
-    if (!formData.identifier.trim()) {
-      newErrors.identifier = 'Email or username is required';
-    }
-
-    if (!formData.password) {
-      newErrors.password = 'Password is required';
-    } else if (formData.password.length < 6) {
-      newErrors.password = 'Password must be at least 6 characters';
-    }
-
+    if (!formData.identifier.trim()) newErrors.identifier = 'Email or username is required';
+    if (!formData.password) newErrors.password = 'Password is required';
+    else if (formData.password.length < 6) newErrors.password = 'Password must be at least 6 characters';
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
   };
 
-  // Handle form submission
   const handleSubmit = async (e) => {
     e.preventDefault();
-    
     if (!validateForm()) return;
-    
     setIsLoading(true);
     setErrors({});
-    
     try {
       const identifier = formData.identifier.trim();
-      
-      // Prepare login data based on whether it's email or username
-      const loginData = isEmail(identifier) 
+      const loginData = isEmail(identifier)
         ? { email: identifier, password: formData.password }
         : { username: identifier, password: formData.password };
-
       const response = await fetch('/api/v1/auth/login', {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
+        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(loginData),
       });
-
       const data = await response.json();
-
       if (response.ok && data.success) {
-        // Store authentication data
         if (data.data?.token) {
           localStorage.setItem('authToken', data.data.token);
           document.cookie = `authToken=${data.data.token}; path=/; max-age=86400; secure; samesite=strict`;
         }
-        
-        if (data.data?.user) {
-          localStorage.setItem('user', JSON.stringify(data.data.user));
-        }
-        
-        // Redirect to dashboard
+        if (data.data?.user) localStorage.setItem('user', JSON.stringify(data.data.user));
         router.push('/pages/dashboard');
       } else {
         setErrors({
@@ -103,266 +70,300 @@ const LoginPage = () => {
         });
       }
     } catch (err) {
-      setErrors({
-        general: 'Connection error. Please try again.'
-      });
+      setErrors({ general: 'Connection error. Please try again.' });
     } finally {
       setIsLoading(false);
     }
   };
 
-  // Handle input changes
   const handleInputChange = (e) => {
     const { name, value } = e.target;
-    setFormData(prev => ({
-      ...prev,
-      [name]: value
-    }));
-    
-    // Clear errors when user starts typing
+    setFormData(prev => ({ ...prev, [name]: value }));
     if (errors[name] || errors.general) {
-      setErrors(prev => ({
-        ...prev,
-        [name]: undefined,
-        general: undefined
-      }));
+      setErrors(prev => ({ ...prev, [name]: undefined, general: undefined }));
     }
   };
 
   return (
     <>
-      <div className="container">
-        {/* Theme Toggle */}
-        <button 
-          onClick={toggleTheme} 
-          className="theme-toggle"
+      <div className="lux-login-bg">
+        <button
+          onClick={toggleTheme}
+          className="lux-theme-toggle"
           aria-label="Toggle theme"
         >
-          {isDarkMode ? <Sun size={20} /> : <Moon size={20} />}
+          {isDarkMode ? <Sun size={20}/> : <Moon size={20}/>}
         </button>
-
-        {/* Login Card */}
-        <div className="card">
-          {/* Header */}
-          <div className="header">
-            <div className="logo">
-              <Car size={28} />
-            </div>
-            <h1>Welcome back</h1>
-            <p>Sign in to your account</p>
+        <div className="lux-login-card">
+          <div className="lux-logo-row">
+            <span className="lux-logo"><Car size={32}/></span>
+            <span className="lux-title">Sign in</span>
           </div>
-
-          {/* Error Message */}
+          <div className="lux-subtitle">Continue to Car Rental</div>
           {errors.general && (
-            <div className="error-banner">
-              {errors.general}
-            </div>
+            <div className="lux-error-banner">{errors.general}</div>
           )}
-
-          {/* Form */}
-          <form onSubmit={handleSubmit} className="form">
-            {/* Email/Username Field */}
-            <div className="field">
-              <label htmlFor="identifier">Email or Username</label>
-              <div className="input-group">
-                <User size={18} className="input-icon" />
+          <form onSubmit={handleSubmit}>
+            <div className="lux-field">
+              <label>Email or Username</label>
+              <div className="lux-input-group">
+                <User className="lux-input-icon"/>
                 <input
                   type="text"
-                  id="identifier"
                   name="identifier"
                   value={formData.identifier}
                   onChange={handleInputChange}
-                  placeholder="Enter email or username"
-                  className={errors.identifier ? 'error' : ''}
+                  placeholder="Email or username"
                   autoComplete="username"
+                  className={errors.identifier ? 'lux-input error' : 'lux-input'}
                 />
               </div>
               {errors.identifier && (
-                <span className="field-error">{errors.identifier}</span>
+                <span className="lux-field-error">{errors.identifier}</span>
               )}
             </div>
-
-            {/* Password Field */}
-            <div className="field">
-              <label htmlFor="password">Password</label>
-              <div className="input-group">
-                <Lock size={18} className="input-icon" />
+            <div className="lux-field">
+              <label>Password</label>
+              <div className="lux-input-group">
+                <Lock className="lux-input-icon"/>
                 <input
                   type={showPassword ? 'text' : 'password'}
-                  id="password"
                   name="password"
                   value={formData.password}
                   onChange={handleInputChange}
-                  placeholder="Enter your password"
-                  className={errors.password ? 'error' : ''}
+                  placeholder="Password"
                   autoComplete="current-password"
+                  className={errors.password ? 'lux-input error' : 'lux-input'}
                 />
                 <button
                   type="button"
-                  onClick={() => setShowPassword(!showPassword)}
-                  className="password-toggle"
+                  className="lux-eye"
                   aria-label="Toggle password visibility"
+                  tabIndex="-1"
+                  onClick={() => setShowPassword(!showPassword)}
                 >
-                  {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
+                  {showPassword ? <EyeOff/> : <Eye/>}
                 </button>
               </div>
               {errors.password && (
-                <span className="field-error">{errors.password}</span>
+                <span className="lux-field-error">{errors.password}</span>
               )}
             </div>
-
-            {/* Submit Button */}
-            <button 
-              type="submit" 
-              disabled={isLoading} 
-              className="submit-btn"
+            <button
+              type="submit"
+              disabled={isLoading}
+              className="lux-submit"
             >
-              {isLoading ? (
-                <>
-                  <div className="spinner"></div>
-                  Signing in...
-                </>
-              ) : (
-                'Sign In'
-              )}
+              {isLoading ? <span className="lux-spinner"></span> : 'Sign in'}
             </button>
           </form>
         </div>
       </div>
-
       <style jsx>{`
         :global(html) {
-          --bg: #ffffff;
-          --surface: #f8fafc;
-          --text: #0f172a;
-          --text-muted: #64748b;
-          --border: #e2e8f0;
-          --accent: #2563eb;
-          --accent-hover: #1d4ed8;
-          --error: #dc2626;
-          --error-bg: #fef2f2;
-          --shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.1);
-          --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
+          --blue-main: #2563eb;
+          --blue-soft: #425cf8;
+          --blue-light: #dbeafe;
+          --glass: rgba(255,255,255,0.84);
+          --glass-dark: rgba(28,33,48,0.87);
+          --dark-bg: #151b2f;
+          --shadow: 0 8px 44px #2563eb22;
+          --error: #d90429;
+          --text: #16243a;
+          --muted: #8997b0;
         }
-
         :global([data-theme="dark"]) {
-          --bg: #0f172a;
-          --surface: #1e293b;
-          --text: #f1f5f9;
-          --text-muted: #94a3b8;
-          --border: #334155;
-          --accent: #3b82f6;
-          --accent-hover: #2563eb;
-          --error: #ef4444;
-          --error-bg: #1e293b;
-          --shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.3);
-          --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.3);
+          --blue-main: #2563eb;
+          --blue-soft: #5d84f7;
+          --blue-light: #232540;
+          --glass: rgba(24,26,37,0.96);
+          --glass-dark: rgba(13,15,28,0.98);
+          --dark-bg: #101323;
+          --shadow: 0 8px 36px #0c165c40;
+          --error: #ff3265;
+          --text: #f7fafc;
+          --muted: #babecb;
         }
-
-        :global(*) {
-          box-sizing: border-box;
-          margin: 0;
-          padding: 0;
-        }
-
-        :global(body) {
-          font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-          background: var(--bg);
-          color: var(--text);
-          line-height: 1.5;
-          transition: background-color 0.2s ease, color 0.2s ease;
-        }
-
-        .container {
+        .lux-login-bg {
           min-height: 100vh;
+          background: linear-gradient(135deg, var(--dark-bg) 0%, var(--blue-soft) 70%, var(--blue-main) 100%);
           display: flex;
           align-items: center;
           justify-content: center;
-          padding: 1rem;
-          background: linear-gradient(135deg, var(--bg) 0%, var(--surface) 100%);
         }
-
-        .theme-toggle {
+        .lux-theme-toggle {
           position: fixed;
-          top: 1.5rem;
-          right: 1.5rem;
-          width: 44px;
-          height: 44px;
-          border-radius: 12px;
-          border: 1px solid var(--border);
-          background: var(--surface);
-          color: var(--text);
+          top: 2rem;
+          right: 2rem;
+          background: var(--glass);
+          color: var(--blue-main);
+          border: none;
+          border-radius: 11px;
+          box-shadow: 0 2px 10px #2563eb18;
+          padding: 9px 12px;
+          cursor: pointer;
+          z-index: 10;
+          transition: background 0.18s;
+        }
+        .lux-theme-toggle:hover { background: var(--blue-light);}
+        .lux-login-card {
+          max-width: 390px;
+          width: 100%;
+          background: var(--glass);
+          border-radius: 2.3rem;
+          box-shadow: var(--shadow);
+          border: 1.6px solid var(--blue-light);
+          padding: 2.9rem 2.3rem 2.2rem;
+          display: flex;
+          flex-direction: column;
+          align-items: stretch;
+          backdrop-filter: blur(12px);
+        }
+        .lux-logo-row {
+          display: flex;
+          align-items: center;
+          gap: 16px;
+          margin-bottom: 1.6rem;
+        }
+        .lux-logo {
           display: flex;
           align-items: center;
           justify-content: center;
-          cursor: pointer;
-          transition: all 0.2s ease;
-          box-shadow: var(--shadow);
-          z-index: 10;
-        }
-
-        .theme-toggle:hover {
-          transform: translateY(-1px);
-          box-shadow: var(--shadow-lg);
-        }
-
-        .card {
-          width: 100%;
-          max-width: 380px;
-          background: var(--surface);
+          background: linear-gradient(135deg, var(--blue-main) 45%, var(--blue-soft) 100%);
           border-radius: 16px;
-          border: 1px solid var(--border);
-          box-shadow: var(--shadow-lg);
-          padding: 2rem;
-        }
-
-        .header {
-          text-align: center;
-          margin-bottom: 2rem;
-        }
-
-        .logo {
           width: 56px;
           height: 56px;
-          background: var(--accent);
-          border-radius: 14px;
-          display: flex;
-          align-items: center;
-          justify-content: center;
-          margin: 0 auto 1rem;
-          color: white;
+          color: #fff;
+          box-shadow: 0 2px 18px #2563eb13;
         }
-
-        .header h1 {
-          font-size: 1.5rem;
-          font-weight: 600;
-          margin-bottom: 0.25rem;
-          color: var(--text);
+        .lux-title {
+          font-size: 2rem;
+          font-weight: 700;
+          font-family: 'Inter', 'Helvetica Neue', Arial, sans-serif;
+          color: var(--blue-main);
+          letter-spacing: -1px;
         }
-
-        .header p {
-          color: var(--text-muted);
-          font-size: 0.875rem;
-        }
-
-        .error-banner {
-          background: var(--error-bg);
-          color: var(--error);
-          padding: 0.75rem;
-          border-radius: 8px;
-          font-size: 0.875rem;
+        .lux-subtitle {
+          color: var(--muted);
+          font-size: 1.08rem;
           margin-bottom: 1.5rem;
+          margin-left: 0.5rem;
+        }
+        .lux-error-banner {
+          background: #eff1ff;
+          color: var(--error);
+          border-radius: 10px;
+          padding: 0.99rem 1rem;
+          font-size: 1.04rem;
+          text-align: center;
+          margin-bottom: 1.12rem;
           border: 1px solid var(--error);
         }
+        .lux-field {
+          margin-bottom: 1.25rem;
+        }
+        .lux-field label {
+          font-weight: 600;
+          font-size: 1rem;
+          color: var(--blue-main);
+          margin-bottom: 0.20rem;
+          display: block;
+        }
+        .lux-input-group {
+          position: relative;
+          display: flex;
+          align-items: center;
+        }
+        .lux-input {
+          background: var(--blue-light);
+          border: none;
+          padding: 1.09rem 1rem 1.09rem 2.75rem;
+          border-radius: 999px;
+          font-size: 1rem;
+          color: var(--text);
+          box-shadow: 0 1px 4px #2563eb10 inset;
+          width: 100%;
+          outline: none;
+          border: 2px solid transparent;
+          transition: border-color 0.16s, box-shadow 0.18s;
+        }
+        .lux-input:focus { border-color: var(--blue-main); box-shadow: 0 0 4px var(--blue-soft) inset;}
+        .lux-input.error { border: 2px solid var(--error);}
+        .lux-input-icon {
+          position: absolute;
+          left: 1.22rem;
+          top: 50%;
+          transform: translateY(-50%);
+          color: var(--muted);
+        }
+        .lux-eye {
+          background: none;
+          border: none;
+          position: absolute;
+          right: 1.1rem;
+          top: 50%;
+          transform: translateY(-50%);
+          color: var(--muted);
+          cursor: pointer;
+          padding: 0.1rem;
+          display: flex;
+          align-items: center;
+        }
+        .lux-field-error {
+          display: block;
+          color: var(--error);
+          font-size: 0.91rem;
+          margin-top: 0.22rem;
+          margin-left: 0.92rem;
+        }
+        .lux-submit {
+          width: 100%;
+          background: linear-gradient(90deg, var(--blue-soft) 30%, var(--blue-main) 90%);
+          color: #fff;
+          font-weight: 700;
+          font-size: 1.16rem;
+          border: none;
+          padding: 1.07rem 0;
+          border-radius: 999px;
+          box-shadow: 0 2px 8px #2563eb13;
+          letter-spacing: 0.02em;
+          cursor: pointer;
+          margin-top: 0.6rem;
+          transition: background 0.15s;
+          display: flex;
+          justify-content: center;
+          align-items: center;
+        }
+        .lux-submit:active {
+          filter: brightness(1.07);
+          background: linear-gradient(90deg, var(--blue-main) 67%, var(--blue-soft));
+        }
+        .lux-submit[disabled] {
+          opacity: 0.7;
+          cursor: not-allowed;
+        }
+        .lux-spinner {
+          display: inline-block;
+          width: 22px;
+          height: 22px;
+          border: 2.7px solid var(--blue-light);
+          border-top: 2.7px solid var(--blue-main);
+          border-radius: 50%;
+          animation: spin 0.83s linear infinite;
+          margin-right: 10px;
+        }
+        @keyframes spin {
+          0% { transform: rotate(0deg);}
+          100% { transform: rotate(360deg);}
+        }
+        @media (max-width: 430px) {
+          .lux-login-card { padding: 1.13rem 0.8rem;}
+          .lux-title { font-size: 1.13rem; }
+        }
+      `}</style>
+    </>
+  );
+};
 
-                .form {
-                  display: flex;
-                  flex-direction: column;
-                  gap: 1.5rem;
-                }
-              `}</style>
-            </>
-          );
-        };
-        
-        export default LoginPage;
+export default LoginPage;
+// End of src/app/page.js

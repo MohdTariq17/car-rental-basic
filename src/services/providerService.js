@@ -70,7 +70,6 @@ export class ProviderService {
 
   static async registerProvider(data) {
     try {
-      // Add any registration-specific logic here
       const providerData = {
         ...data,
         registration_status: 'Pending_Approval'
@@ -89,7 +88,7 @@ export class ProviderService {
   }
 }
 
-// Also export the lowercase version for backward compatibility
+// Export for backward compatibility
 export const providerService = ProviderService;
 
 import { PrismaClient } from '../../generated/client';

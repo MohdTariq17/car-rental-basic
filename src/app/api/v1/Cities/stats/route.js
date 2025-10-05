@@ -2,22 +2,23 @@ import { prisma } from '../../../../../lib/prisma';
 
 export async function GET() {
   try {
-    const stats = await prisma.city.groupBy({
+    const totalCities = await prisma.city.count();
+    const activeCities = await prisma.city.count({
+      where: { active: true }
+    });
+    
+    const citiesByState = await prisma.city.groupBy({
       by: ['stateId'],
       _count: {
         id: true
-      },
-      include: {
-        state: {
-          select: {
-            name: true,
-            code: true
-          }
-        }
       }
     });
     
-    return Response.json(stats);
+    return Response.json({
+      totalCities,
+      activeCities,
+      citiesByState
+    });
   } catch (error) {
     console.error('Error fetching city stats:', error);
     return Response.json({ error: 'Failed to fetch city stats' }, { status: 500 });

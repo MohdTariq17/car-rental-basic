@@ -10,10 +10,12 @@ import { Menubar } from "primereact/menubar";
 import { BreadCrumb } from "primereact/breadcrumb";
 import { Moon, Sun, Car } from 'lucide-react';
 import Image from 'next/image';
+import { logout } from '../util/auth'; // Import the logout function
 
 const Header = () => {
   const router = useRouter();
   const [isDarkMode, setIsDarkMode] = useState(false);
+  const [isLoggingOut, setIsLoggingOut] = useState(false);
 
   // Load dark mode preference
   useEffect(() => {
@@ -33,6 +35,23 @@ const Header = () => {
     setIsDarkMode(newDarkMode);
     localStorage.setItem('darkMode', newDarkMode.toString());
     document.documentElement.classList.toggle('dark');
+  };
+
+  // Handle logout
+  const handleLogout = async () => {
+    if (isLoggingOut) return;
+    
+    setIsLoggingOut(true);
+    
+    try {
+      await logout();
+    } catch (error) {
+      console.error('Logout failed:', error);
+      // Still redirect even if there's an error
+      window.location.href = '/';
+    } finally {
+      setIsLoggingOut(false);
+    }
   };
 
   const items = [
@@ -255,7 +274,7 @@ const Header = () => {
         label="Logout"
         icon="pi pi-power-off"
         className="p-button-rounded font-bold px-4 py-2"
-        onClick={() => router.push("/")}
+        onClick={handleLogout}
         style={{
           fontSize: "0.95rem",
           background: isDarkMode
@@ -269,6 +288,7 @@ const Header = () => {
           transition: "all 0.3s ease",
           boxShadow: "0 4px 14px 0 rgba(239, 68, 68, 0.3)"
         }}
+        disabled={isLoggingOut}
         onMouseEnter={(e) => {
           e.target.style.transform = "scale(1.02)";
           e.target.style.boxShadow = "0 8px 25px 0 rgba(239, 68, 68, 0.4)";

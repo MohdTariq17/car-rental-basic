@@ -1,5 +1,5 @@
-import { NextResponse } from 'next/server';
 import { verifyToken } from './app/util/jwt';
+import { NextResponse } from 'next/server';
 
 export async function middleware(request) {
   const { pathname } = request.nextUrl;
@@ -32,8 +32,8 @@ export async function middleware(request) {
     if (token) {
       try {
         await verifyToken(token);
-        // User is authenticated, redirect to dashboard
-        return NextResponse.redirect(new URL('/dashboard', request.url));
+        // User is authenticated, redirect to correct dashboard path
+        return NextResponse.redirect(new URL('/', request.url));
       } catch (error) {
         // Invalid token, allow access to login page
         const response = NextResponse.next();

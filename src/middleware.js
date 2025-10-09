@@ -4,17 +4,15 @@ import { verifyToken } from './app/util/jwt';
 export async function middleware(request) {
   const { pathname } = request.nextUrl;
   
-  // Allow these routes without authentication
+  // Routes that don't require authentication
   const publicRoutes = [
-    '/login',
     '/register',
-    '/api/v1/auth', // This handles login, register, and token verification
+    '/api/v1/auth',
     '/_next',
     '/favicon.ico',
-    '/',
   ];
   
-  // Check if the route is public
+  // Check if the route is public (excluding root for special handling)
   const isPublicRoute = publicRoutes.some(route => 
     pathname.startsWith(route) || pathname === route
   );
@@ -29,6 +27,25 @@ export async function middleware(request) {
   const tokenFromCookie = request.cookies.get('authToken')?.value;
   const token = tokenFromHeader || tokenFromCookie;
   
+  // Special handling for root path (login page)
+  if (pathname === '/') {
+    if (token) {
+      try {
+        await verifyToken(token);
+        // User is authenticated, redirect to dashboard
+        return NextResponse.redirect(new URL('/dashboard', request.url));
+      } catch (error) {
+        // Invalid token, allow access to login page
+        const response = NextResponse.next();
+        response.cookies.delete('authToken');
+        return response;
+      }
+    }
+    // No token, allow access to login page
+    return NextResponse.next();
+  }
+  
+  // For all other routes, require authentication
   if (!token) {
     if (pathname.startsWith('/api/')) {
       return NextResponse.json(
@@ -37,8 +54,7 @@ export async function middleware(request) {
       );
     }
     
-    const loginUrl = new URL('/login', request.url);
-    return NextResponse.redirect(loginUrl);
+    return NextResponse.redirect(new URL('/', request.url));
   }
   
   try {
@@ -52,9 +68,6 @@ export async function middleware(request) {
   } catch (error) {
     console.error('Token verification failed:', error);
     
-    const response = NextResponse.redirect(new URL('/login', request.url));
-    response.cookies.delete('authToken');
-    
     if (pathname.startsWith('/api/')) {
       return NextResponse.json(
         { message: 'Invalid token' },
@@ -62,19 +75,15 @@ export async function middleware(request) {
       );
     }
     
+    const response = NextResponse.redirect(new URL('/', request.url));
+    response.cookies.delete('authToken');
+    
     return response;
   }
 }
 
 export const config = {
   matcher: [
-    /*
-     * Match all request paths except for the ones starting with:
-     * - api (API routes)
-     * - _next/static (static files)
-     * - _next/image (image optimization files)
-     * - favicon.ico (favicon file)
-     */
     '/((?!_next/static|_next/image|favicon.ico).*)',
   ],
 }

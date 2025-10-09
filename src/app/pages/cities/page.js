@@ -1,5 +1,5 @@
 "use client";
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { DataTable } from "primereact/datatable";
 import { Column } from "primereact/column";
 import { Button } from "primereact/button";
@@ -7,52 +7,129 @@ import { Sidebar } from "primereact/sidebar";
 import { InputText } from "primereact/inputtext";
 import { Dropdown } from "primereact/dropdown";
 import { Tag } from "primereact/tag";
+import { Toast } from "primereact/toast";
+import { ProgressSpinner } from "primereact/progressspinner";
 
 /**
  * Cities Page (Admin Panel)
- * Features: Add, Edit, Delete, Search, Filter
+ * Features: Add, Edit, Delete, Search, Filter with API Integration
  */
 export default function CitiesPage() {
+  const toast = React.useRef(null);
+  
   const statusOptions = [
-    { label: "Active", value: "Active" },
-    { label: "Inactive", value: "Inactive" },
+    { label: "Active", value: true },
+    { label: "Inactive", value: false },
   ];
 
-  // Example states list (you can fetch from API later)
-  const stateOptions = [
-    { label: "California", value: "California" },
-    { label: "Texas", value: "Texas" },
-    { label: "Florida", value: "Florida" },
-    { label: "Maharashtra", value: "Maharashtra" },
-    { label: "Kerala", value: "Kerala" },
-  ];
-
-  const [cities, setCities] = useState([
-    { id: 1, name: "Los Angeles", state: "California", status: "Active" },
-    { id: 2, name: "Houston", state: "Texas", status: "Active" },
-    { id: 3, name: "Miami", state: "Florida", status: "Inactive" },
-    { id: 4, name: "Mumbai", state: "Maharashtra", status: "Active" },
-    { id: 5, name: "Kochi", state: "Kerala", status: "Inactive" },
-  ]);
-
+  const [cities, setCities] = useState([]);
+  const [states, setStates] = useState([]);
+  const [loading, setLoading] = useState(true);
   const [editVisible, setEditVisible] = useState(false);
   const [editing, setEditing] = useState(null);
+  const [saving, setSaving] = useState(false);
 
   const [editName, setEditName] = useState("");
-  const [editState, setEditState] = useState(null);
-  const [editStatus, setEditStatus] = useState("Active");
+  const [editCode, setEditCode] = useState("");
+  const [editStateId, setEditStateId] = useState(null);
+  const [editStatus, setEditStatus] = useState(true);
 
   // Search & Filter
   const [globalFilter, setGlobalFilter] = useState("");
   const [statusFilter, setStatusFilter] = useState(null);
   const [stateFilter, setStateFilter] = useState(null);
 
+  // Pagination
+  const [first, setFirst] = useState(0);
+  const [rows, setRows] = useState(10);
+  const [totalRecords, setTotalRecords] = useState(0);
+
+  // Fetch states for dropdown
+  const fetchStates = async () => {
+    try {
+      const response = await fetch('/api/v1/states?limit=1000');
+      const result = await response.json();
+      
+      if (result.success) {
+        const stateOptions = result.data.states.map(state => ({
+          label: state.name,
+          value: state.id
+        }));
+        setStates(stateOptions);
+      }
+    } catch (error) {
+      console.error('Error fetching states:', error);
+    }
+  };
+
+  // Fetch cities from API
+  const fetchCities = async (page = 1, limit = 10, search = "", status = null, stateId = null) => {
+    try {
+      setLoading(true);
+      const params = new URLSearchParams({
+        page: page.toString(),
+        limit: limit.toString(),
+        ...(search && { search }),
+        ...(status !== null && { status: status.toString() }),
+        ...(stateId && { stateId: stateId.toString() })
+      });
+
+      const response = await fetch(`/api/v1/Cities?${params}`);
+      const result = await response.json();
+
+      if (result.success) {
+        setCities(result.data.cities);
+        setTotalRecords(result.data.pagination.total);
+      } else {
+        toast.current?.show({
+          severity: 'error',
+          summary: 'Error',
+          detail: result.error || 'Failed to fetch cities'
+        });
+      }
+    } catch (error) {
+      console.error('Error fetching cities:', error);
+      toast.current?.show({
+        severity: 'error',
+        summary: 'Error',
+        detail: 'Failed to fetch cities'
+      });
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // Load data on component mount
+  useEffect(() => {
+    fetchStates();
+    fetchCities();
+  }, []);
+
+  // Handle search and filters
+  useEffect(() => {
+    const timeoutId = setTimeout(() => {
+      fetchCities(1, rows, globalFilter, statusFilter, stateFilter);
+      setFirst(0);
+    }, 500);
+
+    return () => clearTimeout(timeoutId);
+  }, [globalFilter, statusFilter, stateFilter, rows]);
+
+  // Handle pagination
+  const onPage = (event) => {
+    const page = Math.floor(event.first / event.rows) + 1;
+    setFirst(event.first);
+    setRows(event.rows);
+    fetchCities(page, event.rows, globalFilter, statusFilter, stateFilter);
+  };
+
   // Open sidebar for Edit
   const openEdit = (row) => {
     setEditing(row);
     setEditName(row.name);
-    setEditState(row.state);
-    setEditStatus(row.status);
+    setEditCode(row.code || "");
+    setEditStateId(row.stateId);
+    setEditStatus(row.active);
     setEditVisible(true);
   };
 
@@ -60,53 +137,124 @@ export default function CitiesPage() {
   const openAdd = () => {
     setEditing(null);
     setEditName("");
-    setEditState(null);
-    setEditStatus("Active");
+    setEditCode("");
+    setEditStateId(null);
+    setEditStatus(true);
     setEditVisible(true);
   };
 
   // Save Edit or Add
-  const saveEdit = () => {
-    if (!editName || !editState) {
-      alert("Please fill all required fields.");
+  const saveEdit = async () => {
+    if (!editName.trim() || !editStateId) {
+      toast.current?.show({
+        severity: 'warn',
+        summary: 'Warning',
+        detail: 'Please fill all required fields'
+      });
       return;
     }
 
-    if (editing) {
-      // Update existing city
-      setCities((prev) =>
-        prev.map((c) =>
-          c.id === editing.id
-            ? { ...c, name: editName, state: editState, status: editStatus }
-            : c
-        )
-      );
-    } else {
-      // Add new city
-      const newCity = {
-        id: cities.length + 1,
-        name: editName,
-        state: editState,
-        status: editStatus,
+    try {
+      setSaving(true);
+      let response;
+
+      const payload = {
+        name: editName.trim(),
+        stateId: editStateId,
+        active: editStatus,
+        ...(editCode.trim() && { code: editCode.trim().toUpperCase() })
       };
-      setCities((prev) => [...prev, newCity]);
+
+      if (editing) {
+        // Update existing city
+        response = await fetch(`/api/v1/Cities/${editing.id}`, {
+          method: 'PUT',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify(payload),
+        });
+      } else {
+        // Add new city
+        response = await fetch('/api/v1/Cities', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify(payload),
+        });
+      }
+
+      const result = await response.json();
+
+      if (result.success) {
+        toast.current?.show({
+          severity: 'success',
+          summary: 'Success',
+          detail: editing ? 'City updated successfully' : 'City created successfully'
+        });
+        setEditVisible(false);
+        setEditing(null);
+        fetchCities(Math.floor(first / rows) + 1, rows, globalFilter, statusFilter, stateFilter);
+      } else {
+        toast.current?.show({
+          severity: 'error',
+          summary: 'Error',
+          detail: result.error || 'Failed to save city'
+        });
+      }
+    } catch (error) {
+      console.error('Error saving city:', error);
+      toast.current?.show({
+        severity: 'error',
+        summary: 'Error',
+        detail: 'Failed to save city'
+      });
+    } finally {
+      setSaving(false);
     }
-    setEditVisible(false);
-    setEditing(null);
   };
 
   // Delete city
-  const removeCity = (row) => {
+  const removeCity = async (row) => {
     if (confirm(`Delete city ${row.name}?`)) {
-      setCities((prev) => prev.filter((c) => c.id !== row.id));
+      try {
+        const response = await fetch(`/api/v1/Cities/${row.id}`, {
+          method: 'DELETE',
+        });
+
+        const result = await response.json();
+
+        if (result.success) {
+          toast.current?.show({
+            severity: 'success',
+            summary: 'Success',
+            detail: 'City deleted successfully'
+          });
+          fetchCities(Math.floor(first / rows) + 1, rows, globalFilter, statusFilter, stateFilter);
+        } else {
+          toast.current?.show({
+            severity: 'error',
+            summary: 'Error',
+            detail: result.error || 'Failed to delete city'
+          });
+        }
+      } catch (error) {
+        console.error('Error deleting city:', error);
+        toast.current?.show({
+          severity: 'error',
+          summary: 'Error',
+          detail: 'Failed to delete city'
+        });
+      }
     }
   };
 
   // Table custom cells
   const statusBody = (row) => (
     <Tag
-      value={row.status}
-      severity={row.status === "Active" ? "success" : "danger"}
+      value={row.active ? "Active" : "Inactive"}
+      severity={row.active ? "success" : "danger"}
       rounded
     />
   );
@@ -134,18 +282,10 @@ export default function CitiesPage() {
     </div>
   );
 
-  // Filtered Data
-  const filteredCities = cities.filter((c) => {
-    const matchesSearch = c.name.toLowerCase().includes(globalFilter.toLowerCase());
-    const matchesStatus =
-      !statusFilter || c.status.toLowerCase() === statusFilter.toLowerCase();
-    const matchesState =
-      !stateFilter || c.state.toLowerCase() === stateFilter.toLowerCase();
-    return matchesSearch && matchesStatus && matchesState;
-  });
-
   return (
     <div className="p-6">
+      <Toast ref={toast} />
+      
       {/* Header */}
       <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-3 mb-4">
         <h1 className="text-2xl font-semibold">Cities</h1>
@@ -160,7 +300,7 @@ export default function CitiesPage() {
           </span>
           <Dropdown
             value={stateFilter}
-            options={stateOptions}
+            options={states}
             onChange={(e) => setStateFilter(e.value)}
             placeholder="Filter by State"
             showClear
@@ -182,19 +322,31 @@ export default function CitiesPage() {
       </div>
 
       {/* Cities Table */}
-      <DataTable
-        value={filteredCities}
-        paginator
-        rows={5}
-        className="rounded-2xl shadow-1"
-        tableStyle={{ minWidth: "40rem" }}
-        emptyMessage="No cities found."
-      >
-        <Column field="name" header="City" sortable />
-        <Column field="state" header="State" sortable />
-        <Column field="status" header="Status" body={statusBody} sortable />
-        <Column header="Action" body={actionBody} style={{ width: "120px" }} />
-      </DataTable>
+      {loading ? (
+        <div className="flex justify-center items-center h-64">
+          <ProgressSpinner />
+        </div>
+      ) : (
+        <DataTable
+          value={cities}
+          lazy
+          paginator
+          first={first}
+          rows={rows}
+          totalRecords={totalRecords}
+          onPage={onPage}
+          loading={loading}
+          className="rounded-2xl shadow-1"
+          tableStyle={{ minWidth: "40rem" }}
+          emptyMessage="No cities found."
+        >
+          <Column field="name" header="City" sortable />
+          <Column field="code" header="Code" sortable />
+          <Column field="state" header="State" sortable />
+          <Column field="active" header="Status" body={statusBody} sortable />
+          <Column header="Action" body={actionBody} style={{ width: "120px" }} />
+        </DataTable>
+      )}
 
       {/* Add/Edit Sidebar */}
       <Sidebar
@@ -209,17 +361,29 @@ export default function CitiesPage() {
               id="edit-name"
               value={editName}
               onChange={(e) => setEditName(e.target.value)}
+              disabled={saving}
             />
             <label htmlFor="edit-name">City Name</label>
           </span>
 
           <span className="p-float-label">
+            <InputText
+              id="edit-code"
+              value={editCode}
+              onChange={(e) => setEditCode(e.target.value)}
+              disabled={saving}
+            />
+            <label htmlFor="edit-code">City Code</label>
+          </span>
+
+          <span className="p-float-label">
             <Dropdown
               id="edit-state"
-              value={editState}
-              options={stateOptions}
-              onChange={(e) => setEditState(e.value)}
+              value={editStateId}
+              options={states}
+              onChange={(e) => setEditStateId(e.value)}
               placeholder="Select State"
+              disabled={saving}
             />
             <label htmlFor="edit-state">State</label>
           </span>
@@ -231,6 +395,7 @@ export default function CitiesPage() {
               options={statusOptions}
               onChange={(e) => setEditStatus(e.value)}
               placeholder="Select Status"
+              disabled={saving}
             />
             <label htmlFor="edit-status">Status</label>
           </span>
@@ -240,11 +405,13 @@ export default function CitiesPage() {
               label="Cancel"
               className="p-button-secondary"
               onClick={() => setEditVisible(false)}
+              disabled={saving}
             />
             <Button
               label={editing ? "Save Changes" : "Add City"}
               className="p-button-success"
               onClick={saveEdit}
+              disabled={saving}
             />
           </div>
         </div>

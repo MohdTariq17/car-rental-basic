@@ -9148,7 +9148,7 @@ export namespace Prisma {
     id: string | null
     name: string | null
     stateId: string | null
-    pincode: string | null
+    code: string | null
     active: boolean | null
     createdAt: Date | null
     updatedAt: Date | null
@@ -9158,7 +9158,7 @@ export namespace Prisma {
     id: string | null
     name: string | null
     stateId: string | null
-    pincode: string | null
+    code: string | null
     active: boolean | null
     createdAt: Date | null
     updatedAt: Date | null
@@ -9168,7 +9168,7 @@ export namespace Prisma {
     id: number
     name: number
     stateId: number
-    pincode: number
+    code: number
     active: number
     createdAt: number
     updatedAt: number
@@ -9180,7 +9180,7 @@ export namespace Prisma {
     id?: true
     name?: true
     stateId?: true
-    pincode?: true
+    code?: true
     active?: true
     createdAt?: true
     updatedAt?: true
@@ -9190,7 +9190,7 @@ export namespace Prisma {
     id?: true
     name?: true
     stateId?: true
-    pincode?: true
+    code?: true
     active?: true
     createdAt?: true
     updatedAt?: true
@@ -9200,7 +9200,7 @@ export namespace Prisma {
     id?: true
     name?: true
     stateId?: true
-    pincode?: true
+    code?: true
     active?: true
     createdAt?: true
     updatedAt?: true
@@ -9283,7 +9283,7 @@ export namespace Prisma {
     id: string
     name: string
     stateId: string
-    pincode: string | null
+    code: string
     active: boolean
     createdAt: Date
     updatedAt: Date
@@ -9310,7 +9310,7 @@ export namespace Prisma {
     id?: boolean
     name?: boolean
     stateId?: boolean
-    pincode?: boolean
+    code?: boolean
     active?: boolean
     createdAt?: boolean
     updatedAt?: boolean
@@ -9325,13 +9325,13 @@ export namespace Prisma {
     id?: boolean
     name?: boolean
     stateId?: boolean
-    pincode?: boolean
+    code?: boolean
     active?: boolean
     createdAt?: boolean
     updatedAt?: boolean
   }
 
-  export type CityOmit<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetOmit<"id" | "name" | "stateId" | "pincode" | "active" | "createdAt" | "updatedAt", ExtArgs["result"]["city"]>
+  export type CityOmit<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetOmit<"id" | "name" | "stateId" | "code" | "active" | "createdAt" | "updatedAt", ExtArgs["result"]["city"]>
   export type CityInclude<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
     state?: boolean | StateDefaultArgs<ExtArgs>
     providers?: boolean | City$providersArgs<ExtArgs>
@@ -9348,7 +9348,7 @@ export namespace Prisma {
       id: string
       name: string
       stateId: string
-      pincode: string | null
+      code: string
       active: boolean
       createdAt: Date
       updatedAt: Date
@@ -9749,7 +9749,7 @@ export namespace Prisma {
     readonly id: FieldRef<"City", 'String'>
     readonly name: FieldRef<"City", 'String'>
     readonly stateId: FieldRef<"City", 'String'>
-    readonly pincode: FieldRef<"City", 'String'>
+    readonly code: FieldRef<"City", 'String'>
     readonly active: FieldRef<"City", 'Boolean'>
     readonly createdAt: FieldRef<"City", 'DateTime'>
     readonly updatedAt: FieldRef<"City", 'DateTime'>
@@ -13293,7 +13293,7 @@ export namespace Prisma {
     id: 'id',
     name: 'name',
     stateId: 'stateId',
-    pincode: 'pincode',
+    code: 'code',
     active: 'active',
     createdAt: 'createdAt',
     updatedAt: 'updatedAt'
@@ -13997,7 +13997,7 @@ export namespace Prisma {
     id?: StringFilter<"City"> | string
     name?: StringFilter<"City"> | string
     stateId?: StringFilter<"City"> | string
-    pincode?: StringNullableFilter<"City"> | string | null
+    code?: StringFilter<"City"> | string
     active?: BoolFilter<"City"> | boolean
     createdAt?: DateTimeFilter<"City"> | Date | string
     updatedAt?: DateTimeFilter<"City"> | Date | string
@@ -14009,7 +14009,7 @@ export namespace Prisma {
     id?: SortOrder
     name?: SortOrder
     stateId?: SortOrder
-    pincode?: SortOrder
+    code?: SortOrder
     active?: SortOrder
     createdAt?: SortOrder
     updatedAt?: SortOrder
@@ -14019,24 +14019,24 @@ export namespace Prisma {
 
   export type CityWhereUniqueInput = Prisma.AtLeast<{
     id?: string
+    code?: string
     AND?: CityWhereInput | CityWhereInput[]
     OR?: CityWhereInput[]
     NOT?: CityWhereInput | CityWhereInput[]
     name?: StringFilter<"City"> | string
     stateId?: StringFilter<"City"> | string
-    pincode?: StringNullableFilter<"City"> | string | null
     active?: BoolFilter<"City"> | boolean
     createdAt?: DateTimeFilter<"City"> | Date | string
     updatedAt?: DateTimeFilter<"City"> | Date | string
     state?: XOR<StateScalarRelationFilter, StateWhereInput>
     providers?: ProviderListRelationFilter
-  }, "id">
+  }, "id" | "code">
 
   export type CityOrderByWithAggregationInput = {
     id?: SortOrder
     name?: SortOrder
     stateId?: SortOrder
-    pincode?: SortOrder
+    code?: SortOrder
     active?: SortOrder
     createdAt?: SortOrder
     updatedAt?: SortOrder
@@ -14052,7 +14052,7 @@ export namespace Prisma {
     id?: StringWithAggregatesFilter<"City"> | string
     name?: StringWithAggregatesFilter<"City"> | string
     stateId?: StringWithAggregatesFilter<"City"> | string
-    pincode?: StringNullableWithAggregatesFilter<"City"> | string | null
+    code?: StringWithAggregatesFilter<"City"> | string
     active?: BoolWithAggregatesFilter<"City"> | boolean
     createdAt?: DateTimeWithAggregatesFilter<"City"> | Date | string
     updatedAt?: DateTimeWithAggregatesFilter<"City"> | Date | string
@@ -14840,7 +14840,7 @@ export namespace Prisma {
   export type CityCreateInput = {
     id?: string
     name: string
-    pincode?: string | null
+    code: string
     active?: boolean
     createdAt?: Date | string
     updatedAt?: Date | string
@@ -14852,7 +14852,7 @@ export namespace Prisma {
     id?: string
     name: string
     stateId: string
-    pincode?: string | null
+    code: string
     active?: boolean
     createdAt?: Date | string
     updatedAt?: Date | string
@@ -14861,7 +14861,7 @@ export namespace Prisma {
 
   export type CityUpdateInput = {
     name?: StringFieldUpdateOperationsInput | string
-    pincode?: NullableStringFieldUpdateOperationsInput | string | null
+    code?: StringFieldUpdateOperationsInput | string
     active?: BoolFieldUpdateOperationsInput | boolean
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
@@ -14872,7 +14872,7 @@ export namespace Prisma {
   export type CityUncheckedUpdateInput = {
     name?: StringFieldUpdateOperationsInput | string
     stateId?: StringFieldUpdateOperationsInput | string
-    pincode?: NullableStringFieldUpdateOperationsInput | string | null
+    code?: StringFieldUpdateOperationsInput | string
     active?: BoolFieldUpdateOperationsInput | boolean
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
@@ -14883,7 +14883,7 @@ export namespace Prisma {
     id?: string
     name: string
     stateId: string
-    pincode?: string | null
+    code: string
     active?: boolean
     createdAt?: Date | string
     updatedAt?: Date | string
@@ -14891,7 +14891,7 @@ export namespace Prisma {
 
   export type CityUpdateManyMutationInput = {
     name?: StringFieldUpdateOperationsInput | string
-    pincode?: NullableStringFieldUpdateOperationsInput | string | null
+    code?: StringFieldUpdateOperationsInput | string
     active?: BoolFieldUpdateOperationsInput | boolean
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
@@ -14900,7 +14900,7 @@ export namespace Prisma {
   export type CityUncheckedUpdateManyInput = {
     name?: StringFieldUpdateOperationsInput | string
     stateId?: StringFieldUpdateOperationsInput | string
-    pincode?: NullableStringFieldUpdateOperationsInput | string | null
+    code?: StringFieldUpdateOperationsInput | string
     active?: BoolFieldUpdateOperationsInput | boolean
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
@@ -15653,7 +15653,7 @@ export namespace Prisma {
     id?: SortOrder
     name?: SortOrder
     stateId?: SortOrder
-    pincode?: SortOrder
+    code?: SortOrder
     active?: SortOrder
     createdAt?: SortOrder
     updatedAt?: SortOrder
@@ -15663,7 +15663,7 @@ export namespace Prisma {
     id?: SortOrder
     name?: SortOrder
     stateId?: SortOrder
-    pincode?: SortOrder
+    code?: SortOrder
     active?: SortOrder
     createdAt?: SortOrder
     updatedAt?: SortOrder
@@ -15673,7 +15673,7 @@ export namespace Prisma {
     id?: SortOrder
     name?: SortOrder
     stateId?: SortOrder
-    pincode?: SortOrder
+    code?: SortOrder
     active?: SortOrder
     createdAt?: SortOrder
     updatedAt?: SortOrder
@@ -16386,7 +16386,7 @@ export namespace Prisma {
   export type CityCreateWithoutProvidersInput = {
     id?: string
     name: string
-    pincode?: string | null
+    code: string
     active?: boolean
     createdAt?: Date | string
     updatedAt?: Date | string
@@ -16397,7 +16397,7 @@ export namespace Prisma {
     id?: string
     name: string
     stateId: string
-    pincode?: string | null
+    code: string
     active?: boolean
     createdAt?: Date | string
     updatedAt?: Date | string
@@ -16446,7 +16446,7 @@ export namespace Prisma {
 
   export type CityUpdateWithoutProvidersInput = {
     name?: StringFieldUpdateOperationsInput | string
-    pincode?: NullableStringFieldUpdateOperationsInput | string | null
+    code?: StringFieldUpdateOperationsInput | string
     active?: BoolFieldUpdateOperationsInput | boolean
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
@@ -16456,7 +16456,7 @@ export namespace Prisma {
   export type CityUncheckedUpdateWithoutProvidersInput = {
     name?: StringFieldUpdateOperationsInput | string
     stateId?: StringFieldUpdateOperationsInput | string
-    pincode?: NullableStringFieldUpdateOperationsInput | string | null
+    code?: StringFieldUpdateOperationsInput | string
     active?: BoolFieldUpdateOperationsInput | boolean
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
@@ -16711,7 +16711,7 @@ export namespace Prisma {
   export type CityCreateWithoutStateInput = {
     id?: string
     name: string
-    pincode?: string | null
+    code: string
     active?: boolean
     createdAt?: Date | string
     updatedAt?: Date | string
@@ -16721,7 +16721,7 @@ export namespace Prisma {
   export type CityUncheckedCreateWithoutStateInput = {
     id?: string
     name: string
-    pincode?: string | null
+    code: string
     active?: boolean
     createdAt?: Date | string
     updatedAt?: Date | string
@@ -16803,7 +16803,7 @@ export namespace Prisma {
     id?: StringFilter<"City"> | string
     name?: StringFilter<"City"> | string
     stateId?: StringFilter<"City"> | string
-    pincode?: StringNullableFilter<"City"> | string | null
+    code?: StringFilter<"City"> | string
     active?: BoolFilter<"City"> | boolean
     createdAt?: DateTimeFilter<"City"> | Date | string
     updatedAt?: DateTimeFilter<"City"> | Date | string
@@ -17146,7 +17146,7 @@ export namespace Prisma {
   export type CityCreateManyStateInput = {
     id?: string
     name: string
-    pincode?: string | null
+    code: string
     active?: boolean
     createdAt?: Date | string
     updatedAt?: Date | string
@@ -17171,7 +17171,7 @@ export namespace Prisma {
 
   export type CityUpdateWithoutStateInput = {
     name?: StringFieldUpdateOperationsInput | string
-    pincode?: NullableStringFieldUpdateOperationsInput | string | null
+    code?: StringFieldUpdateOperationsInput | string
     active?: BoolFieldUpdateOperationsInput | boolean
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
@@ -17180,7 +17180,7 @@ export namespace Prisma {
 
   export type CityUncheckedUpdateWithoutStateInput = {
     name?: StringFieldUpdateOperationsInput | string
-    pincode?: NullableStringFieldUpdateOperationsInput | string | null
+    code?: StringFieldUpdateOperationsInput | string
     active?: BoolFieldUpdateOperationsInput | boolean
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
@@ -17189,7 +17189,7 @@ export namespace Prisma {
 
   export type CityUncheckedUpdateManyWithoutStateInput = {
     name?: StringFieldUpdateOperationsInput | string
-    pincode?: NullableStringFieldUpdateOperationsInput | string | null
+    code?: StringFieldUpdateOperationsInput | string
     active?: BoolFieldUpdateOperationsInput | boolean
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string

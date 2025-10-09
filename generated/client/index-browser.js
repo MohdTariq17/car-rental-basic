@@ -201,7 +201,7 @@ exports.Prisma.CityScalarFieldEnum = {
   id: 'id',
   name: 'name',
   stateId: 'stateId',
-  pincode: 'pincode',
+  code: 'code',
   active: 'active',
   createdAt: 'createdAt',
   updatedAt: 'updatedAt'

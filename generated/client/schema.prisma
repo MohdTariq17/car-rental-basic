@@ -126,7 +126,7 @@ model City {
   name      String
   stateId   String     @db.ObjectId
   state     State      @relation(fields: [stateId], references: [id])
-  pincode   String?
+  code      String     @unique
   active    Boolean    @default(true)
   providers Provider[] // Add this line
   createdAt DateTime   @default(now())
